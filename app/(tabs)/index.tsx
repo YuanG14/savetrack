@@ -15,6 +15,7 @@ import { GoalCard } from '../../components/goals/GoalCard';
 import { TransactionRow } from '../../components/transactions/TransactionRow';
 import { Colors } from '../../constants/theme';
 import { useBudgets } from '../../contexts/BudgetContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { useGoals } from '../../contexts/GoalContext';
 import { useSafeSpend } from '../../contexts/SafeSpendContext';
 import { useSavings } from '../../contexts/SavingsContext';
@@ -47,6 +48,10 @@ export default function HomeScreen() {
     loading: safeSpendLoading,
   } = useSafeSpend();
   const { budgets, loading: budgetsLoading } = useBudgets();
+  const {
+    preferences: notificationPreferences,
+    permissionState: notificationPermission,
+  } = useNotifications();
 
   const summary = useMemo(() => {
     const monthKey = getCurrentMonthKey();
@@ -141,12 +146,35 @@ export default function HomeScreen() {
             <Text style={styles.title}>Your money today</Text>
           </View>
 
-          <Pressable
-            style={styles.headerAddButton}
-            onPress={() => router.push('/add-transaction')}
-          >
-            <Ionicons name="add" size={23} color="#FFFFFF" />
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              style={styles.notificationButton}
+              onPress={() => router.push('/notifications')}
+            >
+              <Ionicons
+                name={
+                  notificationPreferences.enabled &&
+                  notificationPermission === 'granted'
+                    ? 'notifications-outline'
+                    : 'notifications-off-outline'
+                }
+                size={20}
+                color={Colors.primary}
+              />
+
+              {notificationPreferences.enabled &&
+              notificationPermission === 'granted' ? (
+                <View style={styles.notificationDot} />
+              ) : null}
+            </Pressable>
+
+            <Pressable
+              style={styles.headerAddButton}
+              onPress={() => router.push('/add-transaction')}
+            >
+              <Ionicons name="add" size={23} color="#FFFFFF" />
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.balanceCard}>
@@ -446,6 +474,32 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   title: { color: Colors.text, fontSize: 28, fontWeight: '800' },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  notificationButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 9,
+    right: 9,
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+    backgroundColor: Colors.success,
+    borderWidth: 1.5,
+    borderColor: Colors.surface,
+  },
   headerAddButton: {
     width: 46,
     height: 46,

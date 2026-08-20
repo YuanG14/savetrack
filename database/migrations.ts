@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const DATABASE_VERSION = 5;
+const DATABASE_VERSION = 6;
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
   await db.execAsync(`
@@ -130,6 +130,17 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
     `);
 
     currentDbVersion = 5;
+  }
+
+  if (currentDbVersion < 6) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS budget_notification_state (
+        category TEXT PRIMARY KEY NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('warning', 'over'))
+      );
+    `);
+
+    currentDbVersion = 6;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);

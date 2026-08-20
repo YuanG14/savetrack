@@ -4,6 +4,7 @@ import { SQLiteProvider } from 'expo-sqlite';
 
 import { BudgetProvider } from '../contexts/BudgetContext';
 import { GoalProvider } from '../contexts/GoalContext';
+import { NotificationProvider } from '../contexts/NotificationContext';
 import { SafeSpendProvider } from '../contexts/SafeSpendContext';
 import { SavingsProvider } from '../contexts/SavingsContext';
 import { TransactionProvider } from '../contexts/TransactionContext';
@@ -17,22 +18,25 @@ export default function RootLayout() {
           <GoalProvider>
             <SafeSpendProvider>
               <BudgetProvider>
-                <StatusBar style="dark" />
-                <Stack screenOptions={{ headerShown: false }}>
-                  <Stack.Screen name="(tabs)" />
-                  <Stack.Screen name="add-transaction" />
-                  <Stack.Screen name="transaction/[id]" />
-                  <Stack.Screen name="savings" />
-                  <Stack.Screen name="savings-entry" />
-                  <Stack.Screen name="goal-editor" />
-                  <Stack.Screen name="goal/[id]" />
-                  <Stack.Screen name="safe-to-spend" />
-                  <Stack.Screen name="commitment-editor" />
-                  <Stack.Screen name="can-i-afford-it" />
-                  <Stack.Screen name="what-if" />
-                  <Stack.Screen name="budgets" />
-                  <Stack.Screen name="budget-editor" />
-                </Stack>
+                <NotificationProvider>
+                  <StatusBar style="dark" />
+                  <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="add-transaction" />
+                    <Stack.Screen name="transaction/[id]" />
+                    <Stack.Screen name="savings" />
+                    <Stack.Screen name="savings-entry" />
+                    <Stack.Screen name="goal-editor" />
+                    <Stack.Screen name="goal/[id]" />
+                    <Stack.Screen name="safe-to-spend" />
+                    <Stack.Screen name="commitment-editor" />
+                    <Stack.Screen name="can-i-afford-it" />
+                    <Stack.Screen name="what-if" />
+                    <Stack.Screen name="budgets" />
+                    <Stack.Screen name="budget-editor" />
+                    <Stack.Screen name="notifications" />
+                  </Stack>
+                </NotificationProvider>
               </BudgetProvider>
             </SafeSpendProvider>
           </GoalProvider>
