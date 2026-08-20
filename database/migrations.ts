@@ -1,8 +1,13 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
+  await db.execAsync(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA foreign_keys = ON;
+  `);
+
   const versionRow = await db.getFirstAsync<{ user_version: number }>(
     'PRAGMA user_version'
   );
@@ -15,9 +20,6 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
 
   if (currentDbVersion === 0) {
     await db.execAsync(`
-      PRAGMA journal_mode = WAL;
-      PRAGMA foreign_keys = ON;
-
       CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         type TEXT NOT NULL CHECK (type IN ('income', 'expense')),
@@ -60,6 +62,38 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
     `);
 
     currentDbVersion = 2;
+  }
+
+  if (currentDbVersion < 3) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS savings_goals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        target_amount_cents INTEGER NOT NULL CHECK (target_amount_cents > 0),
+        target_date TEXT,
+        priority TEXT NOT NULL CHECK (priority IN ('high', 'medium', 'low')),
+        emoji TEXT NOT NULL DEFAULT '🎯',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS savings_goal_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        goal_id INTEGER NOT NULL,
+        type TEXT NOT NULL CHECK (type IN ('contribution', 'release')),
+        amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (goal_id) REFERENCES savings_goals(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_savings_goal_entries_goal
+      ON savings_goal_entries(goal_id);
+
+      CREATE INDEX IF NOT EXISTS idx_savings_goals_priority
+      ON savings_goals(priority);
+    `);
+
+    currentDbVersion = 3;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);

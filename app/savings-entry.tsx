@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '../constants/theme';
+import { useGoals } from '../contexts/GoalContext';
 import { useSavings } from '../contexts/SavingsContext';
 import type { SavingsEntryType } from '../types/savings';
 import { formatCurrencyFromCents } from '../utils/currency';
@@ -25,6 +26,7 @@ export default function SavingsEntryScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ type?: string }>();
   const { currentSavingsCents, addSavingsEntry } = useSavings();
+  const { totalAllocatedCents } = useGoals();
 
   const initialType: SavingsEntryType =
     params.type === 'withdrawal' ? 'withdrawal' : 'deposit';
@@ -34,6 +36,8 @@ export default function SavingsEntryScreen() {
   const [note, setNote] = useState('');
   const [entryDate, setEntryDate] = useState(getTodayDateString());
   const [saving, setSaving] = useState(false);
+
+  const unallocatedCents = currentSavingsCents - totalAllocatedCents;
 
   const heading = useMemo(
     () => (type === 'deposit' ? 'Add savings' : 'Withdraw savings'),
@@ -76,10 +80,10 @@ export default function SavingsEntryScreen() {
 
     const amountCents = Math.round(numericAmount * 100);
 
-    if (type === 'withdrawal' && amountCents > currentSavingsCents) {
+    if (type === 'withdrawal' && amountCents > unallocatedCents) {
       Alert.alert(
-        'Not enough reserved savings',
-        `You currently have ${formatCurrencyFromCents(currentSavingsCents)} reserved.`
+        'Some savings are allocated to goals',
+        `You can currently withdraw up to ${formatCurrencyFromCents(Math.max(0, unallocatedCents))}. Move money back from a goal first if you need more.`
       );
       return;
     }
@@ -115,7 +119,7 @@ export default function SavingsEntryScreen() {
           <View style={styles.topText}>
             <Text style={styles.title}>{heading}</Text>
             <Text style={styles.subtitle}>
-              Current reserved: {formatCurrencyFromCents(currentSavingsCents)}
+              Reserved {formatCurrencyFromCents(currentSavingsCents)} · Unallocated {formatCurrencyFromCents(unallocatedCents)}
             </Text>
           </View>
         </View>
@@ -135,11 +139,6 @@ export default function SavingsEntryScreen() {
               ]}
               onPress={() => setType('deposit')}
             >
-              <Ionicons
-                name="add-circle-outline"
-                size={18}
-                color={type === 'deposit' ? Colors.success : Colors.textSecondary}
-              />
               <Text
                 style={[
                   styles.segmentText,
@@ -157,11 +156,6 @@ export default function SavingsEntryScreen() {
               ]}
               onPress={() => setType('withdrawal')}
             >
-              <Ionicons
-                name="remove-circle-outline"
-                size={18}
-                color={type === 'withdrawal' ? Colors.warning : Colors.textSecondary}
-              />
               <Text
                 style={[
                   styles.segmentText,
@@ -219,23 +213,18 @@ export default function SavingsEntryScreen() {
             autoCapitalize="none"
           />
 
-          {type === 'withdrawal' ? (
-            <View style={styles.infoCard}>
-              <Ionicons name="information-circle-outline" size={19} color={Colors.warning} />
-              <Text style={styles.infoText}>
-                Withdrawals only move money out of your reserved savings pool. They
-                do not create an expense transaction automatically.
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.infoCard}>
-              <Ionicons name="information-circle-outline" size={19} color={Colors.primary} />
-              <Text style={styles.infoText}>
-                Adding savings reserves part of your existing balance. It does not
-                count as a new income transaction.
-              </Text>
-            </View>
-          )}
+          <View style={styles.infoCard}>
+            <Ionicons
+              name="information-circle-outline"
+              size={19}
+              color={type === 'withdrawal' ? Colors.warning : Colors.primary}
+            />
+            <Text style={styles.infoText}>
+              {type === 'deposit'
+                ? 'Adding savings reserves part of your existing balance. It does not count as new income.'
+                : 'Only unallocated savings can be withdrawn. Money assigned to a goal must be moved back to the pool first.'}
+            </Text>
+          </View>
 
           <Pressable
             style={[styles.submitButton, saving && styles.disabled]}
@@ -245,12 +234,9 @@ export default function SavingsEntryScreen() {
             {saving ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <>
-                <Ionicons name="checkmark-circle-outline" size={19} color="#FFFFFF" />
-                <Text style={styles.submitText}>
-                  {type === 'deposit' ? 'Add to savings' : 'Withdraw savings'}
-                </Text>
-              </>
+              <Text style={styles.submitText}>
+                {type === 'deposit' ? 'Add to savings' : 'Withdraw savings'}
+              </Text>
             )}
           </Pressable>
         </ScrollView>
@@ -281,7 +267,7 @@ const styles = StyleSheet.create({
   },
   topText: { flex: 1, marginLeft: 14 },
   title: { color: Colors.text, fontSize: 22, fontWeight: '800' },
-  subtitle: { color: Colors.textSecondary, fontSize: 12, marginTop: 3 },
+  subtitle: { color: Colors.textSecondary, fontSize: 11, marginTop: 3 },
   content: { paddingHorizontal: 20, paddingBottom: 34 },
   label: {
     color: Colors.text,
@@ -303,10 +289,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     borderRadius: 13,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
   },
   depositActive: { backgroundColor: Colors.successSoft },
   withdrawActive: { backgroundColor: Colors.warningSoft },
@@ -381,8 +365,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
     marginTop: 24,
   },
   disabled: { opacity: 0.7 },

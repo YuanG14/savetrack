@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '../../constants/theme';
+import { useGoals } from '../../contexts/GoalContext';
 import { useSavings } from '../../contexts/SavingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { formatCurrencyFromCents } from '../../utils/currency';
@@ -11,6 +12,7 @@ import { formatCurrencyFromCents } from '../../utils/currency';
 export default function InsightsScreen() {
   const { transactions } = useTransactions();
   const { currentSavingsCents } = useSavings();
+  const { totalAllocatedCents, goals } = useGoals();
 
   const totals = useMemo(() => {
     const incomeCents = transactions
@@ -40,9 +42,7 @@ export default function InsightsScreen() {
             label="Total income recorded"
             value={formatCurrencyFromCents(totals.incomeCents)}
           />
-
           <View style={styles.divider} />
-
           <MetricRow
             icon="arrow-up"
             iconColor={Colors.danger}
@@ -50,24 +50,22 @@ export default function InsightsScreen() {
             label="Total expenses recorded"
             value={formatCurrencyFromCents(totals.expenseCents)}
           />
-
           <View style={styles.divider} />
-
           <MetricRow
             icon="lock-closed-outline"
             iconColor={Colors.primary}
             iconBackground={Colors.primarySoft}
-            label="Currently reserved savings"
+            label="Reserved savings"
             value={formatCurrencyFromCents(currentSavingsCents)}
           />
-        </View>
-
-        <View style={styles.noteCard}>
-          <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
-          <Text style={styles.noteText}>
-            Charts, category breakdowns, monthly comparisons, and smarter
-            spending insights will arrive in the analytics phase.
-          </Text>
+          <View style={styles.divider} />
+          <MetricRow
+            icon="flag-outline"
+            iconColor={Colors.primary}
+            iconBackground={Colors.primarySoft}
+            label={`${goals.length} active ${goals.length === 1 ? 'goal' : 'goals'}`}
+            value={formatCurrencyFromCents(totalAllocatedCents)}
+          />
         </View>
       </View>
     </SafeAreaView>
@@ -143,19 +141,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
     marginVertical: 17,
     marginLeft: 58,
-  },
-  noteCard: {
-    marginTop: 16,
-    flexDirection: 'row',
-    gap: 10,
-    padding: 16,
-    borderRadius: 18,
-    backgroundColor: Colors.primarySoft,
-  },
-  noteText: {
-    flex: 1,
-    color: Colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 18,
   },
 });
