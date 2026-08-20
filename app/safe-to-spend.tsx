@@ -1,3 +1,6 @@
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -21,13 +24,38 @@ import { useSafeSpend } from '../contexts/SafeSpendContext';
 import { useSavings } from '../contexts/SavingsContext';
 import { useTransactions } from '../contexts/TransactionContext';
 import { formatCurrencyFromCents } from '../utils/currency';
-import { isValidDateString } from '../utils/date';
 import {
   calculateDailySafeToSpend,
   calculateSafeToSpend,
   getCommitmentsBeforeDate,
   getDaysUntilDate,
 } from '../utils/safe-spend';
+
+function dateStringToLocalDate(value: string | null) {
+  if (!value) return null;
+
+  const [year, month, day] = value.split('-').map(Number);
+
+  if (!year || !month || !day) return null;
+
+  return new Date(year, month - 1, day);
+}
+
+function localDateToDateString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatDisplayDate(date: Date) {
+  return new Intl.DateTimeFormat('en-PH', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
 
 function cleanMoney(value: string): string {
   const cleaned = value.replace(/[^\d.]/g, '');
@@ -56,7 +84,10 @@ export default function SafeToSpendScreen() {
     saveIncomePlan,
   } = useSafeSpend();
 
-  const [dateInput, setDateInput] = useState(nextIncomeDate ?? '');
+  const [dateInput, setDateInput] = useState<Date | null>(() =>
+    dateStringToLocalDate(nextIncomeDate)
+  );
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [incomeInput, setIncomeInput] = useState(
     expectedIncomeCents > 0 ? (expectedIncomeCents / 100).toFixed(2) : ''
   );
@@ -105,12 +136,30 @@ export default function SafeToSpendScreen() {
     };
   }, [transactions, currentSavingsCents, commitments, nextIncomeDate]);
 
-  const savePlan = async () => {
-    if (dateInput && !isValidDateString(dateInput)) {
-      Alert.alert('Check next income date', 'Use YYYY-MM-DD or leave it blank.');
+  const handleDateChange = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+
+    if (event.type === 'dismissed' || !selectedDate) {
       return;
     }
 
+    setDateInput(selectedDate);
+  };
+
+  const openDatePicker = () => {
+    if (!dateInput) {
+      setDateInput(new Date());
+    }
+
+    setShowDatePicker(true);
+  };
+
+  const savePlan = async () => {
     const numericIncome =
       incomeInput.trim() === '' ? 0 : Number.parseFloat(incomeInput);
 
@@ -122,7 +171,7 @@ export default function SafeToSpendScreen() {
     setSavingPlan(true);
     try {
       await saveIncomePlan(
-        dateInput || null,
+        dateInput ? localDateToDateString(dateInput) : null,
         Math.round(numericIncome * 100)
       );
       Alert.alert('Income plan saved', 'Safe-to-spend has been recalculated.');
@@ -232,16 +281,88 @@ export default function SafeToSpendScreen() {
           <Text style={styles.sectionTitle}>Next income</Text>
 
           <View style={styles.planCard}>
-            <Text style={styles.label}>Next income date</Text>
-            <TextInput
-              value={dateInput}
-              onChangeText={setDateInput}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={Colors.textMuted}
-              style={styles.textInput}
-              maxLength={10}
-              autoCapitalize="none"
-            />
+            <View style={styles.dateLabelRow}>
+              <Text style={styles.label}>Next income date</Text>
+
+              {dateInput ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear next income date"
+                  onPress={() => {
+                    setDateInput(null);
+                    setShowDatePicker(false);
+                  }}
+                >
+                  <Text style={styles.clearDateAction}>Clear</Text>
+                </Pressable>
+              ) : null}
+            </View>
+
+            <Pressable
+              style={styles.dateSelector}
+              onPress={openDatePicker}
+              accessibilityRole="button"
+              accessibilityLabel={
+                dateInput
+                  ? `Next income date, ${formatDisplayDate(dateInput)}. Tap to change.`
+                  : 'Select next income date'
+              }
+            >
+              <View style={styles.dateIcon}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
+              </View>
+
+              <View style={styles.dateTextWrap}>
+                <Text
+                  style={[
+                    styles.dateValue,
+                    !dateInput && styles.datePlaceholder,
+                  ]}
+                >
+                  {dateInput
+                    ? formatDisplayDate(dateInput)
+                    : 'Select a date'}
+                </Text>
+                <Text style={styles.dateHint}>
+                  Tap to select month, day, and year
+                </Text>
+              </View>
+
+              <Ionicons
+                name="chevron-down"
+                size={18}
+                color={Colors.textMuted}
+              />
+            </Pressable>
+
+            {showDatePicker && dateInput ? (
+              <View style={styles.pickerCard}>
+                <DateTimePicker
+                  value={dateInput}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={handleDateChange}
+                  minimumDate={new Date()}
+                  themeVariant={Platform.OS === 'ios' ? 'light' : undefined}
+                  textColor={Platform.OS === 'ios' ? Colors.text : undefined}
+                  accentColor={Colors.primary}
+                  style={styles.datePicker}
+                />
+
+                {Platform.OS === 'ios' ? (
+                  <Pressable
+                    style={styles.doneButton}
+                    onPress={() => setShowDatePicker(false)}
+                  >
+                    <Text style={styles.doneButtonText}>Done</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
 
             <Text style={styles.label}>Expected income</Text>
             <View style={styles.amountWrap}>
@@ -477,15 +598,82 @@ const styles = StyleSheet.create({
     marginBottom: 7,
     marginTop: 12,
   },
-  textInput: {
-    minHeight: 48,
-    borderRadius: 14,
+  dateLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  clearDateAction: {
+    color: Colors.primary,
+    fontSize: 11,
+    fontWeight: '800',
+    marginBottom: 7,
+    marginTop: 12,
+  },
+  dateSelector: {
+    minHeight: 68,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.background,
+    paddingHorizontal: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateTextWrap: {
+    flex: 1,
+    marginLeft: 11,
+  },
+  dateValue: {
     color: Colors.text,
-    paddingHorizontal: 14,
     fontSize: 13,
+    fontWeight: '800',
+  },
+  datePlaceholder: {
+    color: Colors.textMuted,
+  },
+  dateHint: {
+    color: Colors.textMuted,
+    fontSize: 9,
+    marginTop: 3,
+  },
+  pickerCard: {
+    marginTop: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    paddingTop: Platform.OS === 'ios' ? 6 : 0,
+    paddingBottom: Platform.OS === 'ios' ? 10 : 0,
+  },
+  datePicker: {
+    width: '100%',
+    height: Platform.OS === 'ios' ? 190 : undefined,
+    backgroundColor: '#FFFFFF',
+  },
+  doneButton: {
+    alignSelf: 'flex-end',
+    minHeight: 40,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 12,
+  },
+  doneButtonText: {
+    color: Colors.primary,
+    fontSize: 11,
+    fontWeight: '800',
   },
   amountWrap: {
     minHeight: 48,
