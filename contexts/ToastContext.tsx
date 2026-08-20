@@ -69,7 +69,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
   const hideToast = useCallback(() => {
     Animated.timing(animation, {
       toValue: 0,
-      duration: 170,
+      duration: 150,
       useNativeDriver: true,
     }).start(() => setToast(null));
   }, [animation]);
@@ -92,7 +92,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
 
       Animated.timing(animation, {
         toValue: 1,
-        duration: 120,
+        duration: 140,
         useNativeDriver: true,
       }).start();
 
