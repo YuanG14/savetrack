@@ -1,3 +1,6 @@
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -22,7 +25,35 @@ import type {
   TransactionInput,
   TransactionType,
 } from '../../types/transaction';
-import { getTodayDateString, isValidDateString } from '../../utils/date';
+import { getTodayDateString } from '../../utils/date';
+
+function dateStringToLocalDate(value?: string) {
+  if (!value) return new Date();
+
+  const [year, month, day] = value.split('-').map(Number);
+
+  if (!year || !month || !day) {
+    return new Date();
+  }
+
+  return new Date(year, month - 1, day);
+}
+
+function localDateToDateString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatDisplayDate(date: Date) {
+  return new Intl.DateTimeFormat('en-PH', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
 
 type TransactionFormProps = {
   title: string;
@@ -56,9 +87,10 @@ export function TransactionForm({
     initialValue?.category ?? 'Food'
   );
   const [note, setNote] = useState(initialValue?.note ?? '');
-  const [transactionDate, setTransactionDate] = useState(
-    initialValue?.transactionDate ?? getTodayDateString()
+  const [transactionDate, setTransactionDate] = useState(() =>
+    dateStringToLocalDate(initialValue?.transactionDate ?? getTodayDateString())
   );
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -68,7 +100,7 @@ export function TransactionForm({
     setAmount((initialValue.amountCents / 100).toFixed(2));
     setCategory(initialValue.category);
     setNote(initialValue.note ?? '');
-    setTransactionDate(initialValue.transactionDate);
+    setTransactionDate(dateStringToLocalDate(initialValue.transactionDate));
   }, [initialValue]);
 
   const availableCategories = useMemo(
@@ -104,19 +136,26 @@ export function TransactionForm({
     setAmount(`${whole}.${decimals}`);
   };
 
+  const handleDateChange = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+
+    if (event.type === 'dismissed' || !selectedDate) {
+      return;
+    }
+
+    setTransactionDate(selectedDate);
+  };
+
   const handleSubmit = async () => {
     const numericAmount = Number.parseFloat(amount);
 
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       Alert.alert('Enter an amount', 'The amount must be greater than ₱0.');
-      return;
-    }
-
-    if (!isValidDateString(transactionDate)) {
-      Alert.alert(
-        'Check the date',
-        'Use a valid date in YYYY-MM-DD format, for example 2026-08-20.'
-      );
       return;
     }
 
@@ -126,6 +165,7 @@ export function TransactionForm({
     }
 
     const amountCents = Math.round(numericAmount * 100);
+    const transactionDateString = localDateToDateString(transactionDate);
 
     setSaving(true);
     try {
@@ -134,7 +174,7 @@ export function TransactionForm({
         amountCents,
         category: category.trim(),
         note: note.trim(),
-        transactionDate,
+        transactionDate: transactionDateString,
       });
     } finally {
       setSaving(false);
@@ -277,24 +317,68 @@ export function TransactionForm({
 
           <View style={styles.labelRow}>
             <Text style={styles.label}>Date</Text>
-            <Pressable onPress={() => setTransactionDate(getTodayDateString())}>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Set transaction date to today"
+              onPress={() => setTransactionDate(new Date())}
+            >
               <Text style={styles.todayAction}>Use today</Text>
             </Pressable>
           </View>
 
-          <TextInput
-            value={transactionDate}
-            onChangeText={setTransactionDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor="#94A3B8"
-            style={styles.textInput}
-            maxLength={10}
-            autoCapitalize="none"
-          />
+          <Pressable
+            style={styles.dateSelector}
+            onPress={() => setShowDatePicker(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`Transaction date, ${formatDisplayDate(
+              transactionDate
+            )}. Tap to change.`}
+          >
+            <View style={styles.dateIcon}>
+              <Ionicons
+                name="calendar-outline"
+                size={20}
+                color={Colors.primary}
+              />
+            </View>
 
-          <Text style={styles.dateHint}>
-            Use YYYY-MM-DD, for example 2026-08-20.
-          </Text>
+            <View style={styles.dateTextWrap}>
+              <Text style={styles.dateValue}>
+                {formatDisplayDate(transactionDate)}
+              </Text>
+              <Text style={styles.dateHint}>
+                Tap to select month, day, and year
+              </Text>
+            </View>
+
+            <Ionicons
+              name="chevron-down"
+              size={18}
+              color={Colors.textMuted}
+            />
+          </Pressable>
+
+          {showDatePicker ? (
+            <View style={styles.pickerCard}>
+              <DateTimePicker
+                value={transactionDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleDateChange}
+                maximumDate={new Date()}
+              />
+
+              {Platform.OS === 'ios' ? (
+                <Pressable
+                  style={styles.doneButton}
+                  onPress={() => setShowDatePicker(false)}
+                >
+                  <Text style={styles.doneButtonText}>Done</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
 
           <Pressable
             style={[styles.submitButton, saving && styles.buttonDisabled]}
@@ -483,10 +567,61 @@ const styles = StyleSheet.create({
     marginBottom: 9,
     marginTop: 18,
   },
+  dateSelector: {
+    minHeight: 70,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateTextWrap: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  dateValue: {
+    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '800',
+  },
   dateHint: {
     color: Colors.textMuted,
-    fontSize: 11,
-    marginTop: 7,
+    fontSize: 10,
+    marginTop: 3,
+  },
+  pickerCard: {
+    marginTop: 10,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    overflow: 'hidden',
+    paddingBottom: Platform.OS === 'ios' ? 10 : 0,
+  },
+  doneButton: {
+    alignSelf: 'flex-end',
+    minHeight: 40,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 12,
+  },
+  doneButtonText: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: '800',
   },
   submitButton: {
     minHeight: 54,
