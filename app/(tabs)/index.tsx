@@ -298,6 +298,24 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
+        <Pressable
+          style={styles.insightsShortcut}
+          onPress={() => router.push('/insights')}
+        >
+          <View style={styles.insightsShortcutIcon}>
+            <Ionicons name="bar-chart-outline" size={19} color={Colors.primary} />
+          </View>
+
+          <View style={styles.insightsShortcutText}>
+            <Text style={styles.insightsShortcutTitle}>See your money trends</Text>
+            <Text style={styles.insightsShortcutMeta}>
+              Explore spending categories, cash flow, and savings insights.
+            </Text>
+          </View>
+
+          <Ionicons name="chevron-forward" size={17} color={Colors.textMuted} />
+        </Pressable>
+
         {featuredGoal ? (
           <>
             <View style={styles.sectionHeader}>
@@ -544,6 +562,40 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   miniCardMeta: { color: Colors.textMuted, fontSize: 9, marginTop: 5 },
+  insightsShortcut: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 18,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  insightsShortcutIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  insightsShortcutText: {
+    flex: 1,
+    marginLeft: 10,
+    marginRight: 8,
+  },
+  insightsShortcutTitle: {
+    color: Colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  insightsShortcutMeta: {
+    color: Colors.textMuted,
+    fontSize: 9,
+    lineHeight: 14,
+    marginTop: 3,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
