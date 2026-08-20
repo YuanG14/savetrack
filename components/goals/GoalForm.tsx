@@ -1,3 +1,6 @@
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -21,7 +24,35 @@ import type {
   GoalPriority,
   SavingsGoal,
 } from '../../types/goal';
-import { isValidDateString } from '../../utils/date';
+import { getTodayDateString } from '../../utils/date';
+
+function dateStringToLocalDate(value?: string | null) {
+  if (!value) return null;
+
+  const [year, month, day] = value.split('-').map(Number);
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day);
+}
+
+function localDateToDateString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatDisplayDate(date: Date) {
+  return new Intl.DateTimeFormat('en-PH', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
 
 const emojis = ['🎯', '📱', '🚗', '✈️', '💻', '🏠', '🎓', '💰'];
 const priorities: GoalPriority[] = ['high', 'medium', 'low'];
@@ -46,7 +77,10 @@ export function GoalForm({
   const [amount, setAmount] = useState(
     initialValue ? (initialValue.targetAmountCents / 100).toFixed(2) : ''
   );
-  const [targetDate, setTargetDate] = useState(initialValue?.targetDate ?? '');
+  const [targetDate, setTargetDate] = useState<Date | null>(() =>
+    dateStringToLocalDate(initialValue?.targetDate)
+  );
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [priority, setPriority] = useState<GoalPriority>(
     initialValue?.priority ?? 'medium'
   );
@@ -57,7 +91,7 @@ export function GoalForm({
     if (!initialValue) return;
     setName(initialValue.name);
     setAmount((initialValue.targetAmountCents / 100).toFixed(2));
-    setTargetDate(initialValue.targetDate ?? '');
+    setTargetDate(dateStringToLocalDate(initialValue.targetDate));
     setPriority(initialValue.priority);
     setEmoji(initialValue.emoji);
   }, [initialValue]);
@@ -80,6 +114,29 @@ export function GoalForm({
     setAmount(`${whole}.${decimals}`);
   };
 
+  const handleDateChange = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+
+    if (event.type === 'dismissed' || !selectedDate) {
+      return;
+    }
+
+    setTargetDate(selectedDate);
+  };
+
+  const openDatePicker = () => {
+    if (!targetDate) {
+      setTargetDate(dateStringToLocalDate(getTodayDateString()) ?? new Date());
+    }
+
+    setShowDatePicker(true);
+  };
+
   const handleSubmit = async () => {
     const cleanName = name.trim();
     const numericAmount = Number.parseFloat(amount);
@@ -94,20 +151,12 @@ export function GoalForm({
       return;
     }
 
-    if (targetDate && !isValidDateString(targetDate)) {
-      Alert.alert(
-        'Check target date',
-        'Use YYYY-MM-DD, or leave the target date empty.'
-      );
-      return;
-    }
-
     setSaving(true);
     try {
       await onSubmit({
         name: cleanName,
         targetAmountCents: Math.round(numericAmount * 100),
-        targetDate: targetDate || null,
+        targetDate: targetDate ? localDateToDateString(targetDate) : null,
         priority,
         emoji,
       });
@@ -179,16 +228,88 @@ export function GoalForm({
             />
           </View>
 
-          <Text style={styles.label}>Target date</Text>
-          <TextInput
-            value={targetDate}
-            onChangeText={setTargetDate}
-            placeholder="Optional · YYYY-MM-DD"
-            placeholderTextColor={Colors.textMuted}
-            style={styles.textInput}
-            maxLength={10}
-            autoCapitalize="none"
-          />
+          <View style={styles.dateLabelRow}>
+            <Text style={styles.label}>Target date</Text>
+
+            {targetDate ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Clear target date"
+                onPress={() => {
+                  setTargetDate(null);
+                  setShowDatePicker(false);
+                }}
+              >
+                <Text style={styles.clearDateAction}>Clear</Text>
+              </Pressable>
+            ) : null}
+          </View>
+
+          <Pressable
+            style={styles.dateSelector}
+            onPress={openDatePicker}
+            accessibilityRole="button"
+            accessibilityLabel={
+              targetDate
+                ? `Target date, ${formatDisplayDate(targetDate)}. Tap to change.`
+                : 'Select goal target date'
+            }
+          >
+            <View style={styles.dateIcon}>
+              <Ionicons
+                name="calendar-outline"
+                size={20}
+                color={Colors.primary}
+              />
+            </View>
+
+            <View style={styles.dateTextWrap}>
+              <Text
+                style={[
+                  styles.dateValue,
+                  !targetDate && styles.datePlaceholder,
+                ]}
+              >
+                {targetDate
+                  ? formatDisplayDate(targetDate)
+                  : 'Optional target date'}
+              </Text>
+              <Text style={styles.dateHint}>
+                Tap to select month, day, and year
+              </Text>
+            </View>
+
+            <Ionicons
+              name="chevron-down"
+              size={18}
+              color={Colors.textMuted}
+            />
+          </Pressable>
+
+          {showDatePicker && targetDate ? (
+            <View style={styles.pickerCard}>
+              <DateTimePicker
+                value={targetDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleDateChange}
+                minimumDate={new Date()}
+                themeVariant={Platform.OS === 'ios' ? 'light' : undefined}
+                textColor={Platform.OS === 'ios' ? Colors.text : undefined}
+                accentColor={Colors.primary}
+                style={styles.datePicker}
+              />
+
+              {Platform.OS === 'ios' ? (
+                <Pressable
+                  style={styles.doneButton}
+                  onPress={() => setShowDatePicker(false)}
+                >
+                  <Text style={styles.doneButtonText}>Done</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
 
           <Text style={styles.label}>Priority</Text>
           <View style={styles.priorityRow}>
@@ -327,6 +448,83 @@ const styles = StyleSheet.create({
     fontSize: 29,
     fontWeight: '800',
     paddingVertical: 0,
+  },
+  dateLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  clearDateAction: {
+    color: Colors.primary,
+    fontSize: 11,
+    fontWeight: '800',
+    marginBottom: 7,
+    marginTop: 18,
+  },
+  dateSelector: {
+    minHeight: 68,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateTextWrap: {
+    flex: 1,
+    marginLeft: 11,
+  },
+  dateValue: {
+    color: Colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  datePlaceholder: {
+    color: Colors.textMuted,
+  },
+  dateHint: {
+    color: Colors.textMuted,
+    fontSize: 9,
+    marginTop: 3,
+  },
+  pickerCard: {
+    marginTop: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    paddingTop: Platform.OS === 'ios' ? 6 : 0,
+    paddingBottom: Platform.OS === 'ios' ? 10 : 0,
+  },
+  datePicker: {
+    width: '100%',
+    height: Platform.OS === 'ios' ? 190 : undefined,
+    backgroundColor: '#FFFFFF',
+  },
+  doneButton: {
+    alignSelf: 'flex-end',
+    minHeight: 40,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 12,
+  },
+  doneButtonText: {
+    color: Colors.primary,
+    fontSize: 11,
+    fontWeight: '800',
   },
   priorityRow: { flexDirection: 'row', gap: 8 },
   priorityButton: {
