@@ -224,6 +224,24 @@ export default function HomeScreen() {
           </View>
         </Pressable>
 
+        <Pressable
+          style={styles.affordabilityShortcut}
+          onPress={() => router.push('/can-i-afford-it')}
+        >
+          <View style={styles.affordabilityShortcutIcon}>
+            <Ionicons name="bag-check-outline" size={20} color={Colors.primary} />
+          </View>
+
+          <View style={styles.affordabilityShortcutText}>
+            <Text style={styles.affordabilityShortcutTitle}>Can I afford it?</Text>
+            <Text style={styles.affordabilityShortcutMeta}>
+              Check a purchase before spending.
+            </Text>
+          </View>
+
+          <Ionicons name="chevron-forward" size={17} color={Colors.textMuted} />
+        </Pressable>
+
         <View style={styles.moneyStatusGrid}>
           <Pressable
             style={styles.savingsCard}
@@ -412,6 +430,38 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   safeLink: { color: Colors.primary, fontSize: 10, fontWeight: '800' },
+  affordabilityShortcut: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 18,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  affordabilityShortcutIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  affordabilityShortcutText: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  affordabilityShortcutTitle: {
+    color: Colors.text,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  affordabilityShortcutMeta: {
+    color: Colors.textMuted,
+    fontSize: 9,
+    marginTop: 3,
+  },
   moneyStatusGrid: { flexDirection: 'row', gap: 12, marginBottom: 26 },
   savingsCard: {
     flex: 1,

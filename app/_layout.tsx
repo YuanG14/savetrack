@@ -26,6 +26,7 @@ export default function RootLayout() {
                 <Stack.Screen name="goal/[id]" />
                 <Stack.Screen name="safe-to-spend" />
                 <Stack.Screen name="commitment-editor" />
+                <Stack.Screen name="can-i-afford-it" />
               </Stack>
             </SafeSpendProvider>
           </GoalProvider>
