@@ -13,13 +13,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TransactionRow } from '../../components/transactions/TransactionRow';
 import { Colors } from '../../constants/theme';
+import { useSavings } from '../../contexts/SavingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { formatCurrencyFromCents } from '../../utils/currency';
 import { getCurrentMonthKey } from '../../utils/date';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { transactions, loading } = useTransactions();
+  const { transactions, loading: transactionsLoading } = useTransactions();
+  const {
+    currentSavingsCents,
+    loading: savingsLoading,
+  } = useSavings();
 
   const summary = useMemo(() => {
     const monthKey = getCurrentMonthKey();
@@ -43,14 +48,19 @@ export default function HomeScreen() {
       .filter((item) => item.type === 'expense')
       .reduce((sum, item) => sum + item.amountCents, 0);
 
+    const balanceCents = allIncomeCents - allExpenseCents;
+    const safeToSpendCents = balanceCents - currentSavingsCents;
+
     return {
       incomeCents,
       expenseCents,
-      balanceCents: allIncomeCents - allExpenseCents,
+      balanceCents,
+      safeToSpendCents,
     };
-  }, [transactions]);
+  }, [transactions, currentSavingsCents]);
 
   const recentTransactions = transactions.slice(0, 5);
+  const loading = transactionsLoading || savingsLoading;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -99,9 +109,7 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        <View style={styles.sectionHeadingRow}>
-          <Text style={styles.sectionTitle}>This month</Text>
-        </View>
+        <Text style={styles.sectionTitle}>This month</Text>
 
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
@@ -125,25 +133,49 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={styles.safeToSpendCard}>
-          <View style={styles.safeHeader}>
-            <View>
-              <Text style={styles.safeToSpendLabel}>Safe to spend</Text>
-              <Text style={styles.safeToSpendValue}>
-                {formatCurrencyFromCents(Math.max(summary.balanceCents, 0))}
-              </Text>
+        <View style={styles.moneyStatusGrid}>
+          <Pressable
+            style={styles.savingsCard}
+            onPress={() => router.push('/goals')}
+          >
+            <View style={styles.miniCardHeader}>
+              <View style={styles.miniCardIcon}>
+                <Ionicons name="lock-closed-outline" size={18} color={Colors.primary} />
+              </View>
+              <Ionicons name="chevron-forward" size={17} color={Colors.textMuted} />
             </View>
+            <Text style={styles.miniCardLabel}>Reserved savings</Text>
+            <Text style={styles.miniCardValue}>
+              {formatCurrencyFromCents(currentSavingsCents)}
+            </Text>
+          </Pressable>
 
-            <View style={styles.safeIcon}>
-              <Ionicons name="shield-checkmark-outline" size={24} color={Colors.primary} />
+          <View style={styles.safeToSpendCard}>
+            <View style={styles.miniCardHeader}>
+              <View style={styles.safeIcon}>
+                <Ionicons name="shield-checkmark-outline" size={18} color={Colors.success} />
+              </View>
             </View>
+            <Text style={styles.miniCardLabel}>Safe to spend</Text>
+            <Text
+              style={[
+                styles.miniCardValue,
+                summary.safeToSpendCents < 0 && styles.negativeValue,
+              ]}
+            >
+              {formatCurrencyFromCents(summary.safeToSpendCents)}
+            </Text>
           </View>
-
-          <Text style={styles.safeToSpendDescription}>
-            For now this follows your available balance. Savings reservations
-            will make this smarter in Phase 3.
-          </Text>
         </View>
+
+        {summary.safeToSpendCents < 0 ? (
+          <View style={styles.warningCard}>
+            <Ionicons name="warning-outline" size={20} color={Colors.warning} />
+            <Text style={styles.warningText}>
+              Your reserved savings are higher than your current available balance.
+            </Text>
+          </View>
+        ) : null}
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent transactions</Text>
@@ -152,7 +184,7 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {loading ? (
+        {transactionsLoading ? (
           <View style={styles.loadingCard}>
             <ActivityIndicator color={Colors.primary} />
             <Text style={styles.loadingText}>Loading transactions...</Text>
@@ -187,15 +219,8 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 120,
-  },
+  safeArea: { flex: 1, backgroundColor: Colors.background },
+  content: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 120 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -209,11 +234,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginBottom: 5,
   },
-  title: {
-    color: Colors.text,
-    fontSize: 28,
-    fontWeight: '800',
-  },
+  title: { color: Colors.text, fontSize: 28, fontWeight: '800' },
   headerAddButton: {
     width: 46,
     height: 46,
@@ -241,15 +262,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  balanceLabel: {
-    color: '#DBEAFE',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  balanceLoader: {
-    alignSelf: 'flex-start',
-    marginVertical: 17,
-  },
+  balanceLabel: { color: '#DBEAFE', fontSize: 14, fontWeight: '600' },
+  balanceLoader: { alignSelf: 'flex-start', marginVertical: 17 },
   balance: {
     color: '#FFFFFF',
     fontSize: 38,
@@ -257,27 +271,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 8,
   },
-  balanceDescription: {
-    color: '#BFDBFE',
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  sectionHeadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  balanceDescription: { color: '#BFDBFE', fontSize: 13, lineHeight: 19 },
   sectionTitle: {
     color: Colors.text,
     fontSize: 18,
     fontWeight: '800',
     marginBottom: 14,
   },
-  summaryRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
+  summaryRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   summaryCard: {
     flex: 1,
     backgroundColor: Colors.surface,
@@ -294,63 +295,79 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 14,
   },
-  incomeIcon: {
-    backgroundColor: Colors.successSoft,
-  },
-  expenseIcon: {
-    backgroundColor: Colors.dangerSoft,
-  },
-  summaryLabel: {
-    color: Colors.textSecondary,
-    fontSize: 12,
-    marginBottom: 5,
-  },
-  summaryValue: {
-    color: Colors.text,
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  safeToSpendCard: {
+  incomeIcon: { backgroundColor: Colors.successSoft },
+  expenseIcon: { backgroundColor: Colors.dangerSoft },
+  summaryLabel: { color: Colors.textSecondary, fontSize: 12, marginBottom: 5 },
+  summaryValue: { color: Colors.text, fontSize: 18, fontWeight: '800' },
+  moneyStatusGrid: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  savingsCard: {
+    flex: 1,
     backgroundColor: Colors.primarySoft,
     borderRadius: 20,
-    padding: 20,
-    marginBottom: 30,
+    padding: 17,
+    minHeight: 132,
   },
-  safeHeader: {
+  safeToSpendCard: {
+    flex: 1,
+    backgroundColor: Colors.successSoft,
+    borderRadius: 20,
+    padding: 17,
+    minHeight: 132,
+  },
+  miniCardHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    marginBottom: 16,
   },
-  safeIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+  miniCardIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  safeToSpendLabel: {
-    color: Colors.primary,
-    fontSize: 13,
+  safeIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  miniCardLabel: {
+    color: Colors.textSecondary,
+    fontSize: 11,
     fontWeight: '700',
   },
-  safeToSpendValue: {
-    color: Colors.primaryDark,
-    fontSize: 27,
+  miniCardValue: {
+    color: Colors.text,
+    fontSize: 18,
     fontWeight: '800',
-    marginTop: 3,
+    marginTop: 5,
   },
-  safeToSpendDescription: {
-    color: Colors.textSecondary,
+  negativeValue: { color: Colors.danger },
+  warningCard: {
+    flexDirection: 'row',
+    gap: 9,
+    alignItems: 'flex-start',
+    backgroundColor: Colors.warningSoft,
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 26,
+  },
+  warningText: {
+    flex: 1,
+    color: Colors.warningDark,
     fontSize: 12,
     lineHeight: 18,
-    marginTop: 10,
-    paddingRight: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 14,
   },
   viewAll: {
     color: Colors.primary,
@@ -367,10 +384,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  loadingText: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-  },
+  loadingText: { color: Colors.textSecondary, fontSize: 13 },
   emptyState: {
     backgroundColor: Colors.surface,
     borderRadius: 22,
@@ -412,11 +426,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 7,
   },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 13,
-  },
+  primaryButtonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 13 },
   transactionList: {
     backgroundColor: Colors.surface,
     borderRadius: 22,

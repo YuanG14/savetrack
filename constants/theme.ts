@@ -17,6 +17,7 @@ export const Colors = {
   successSoft: '#F0FDF4',
 
   warning: '#D97706',
+  warningDark: '#92400E',
   warningSoft: '#FFFBEB',
 
   danger: '#DC2626',
