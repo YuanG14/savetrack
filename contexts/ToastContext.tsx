@@ -90,11 +90,9 @@ export function ToastProvider({ children }: PropsWithChildren) {
       animation.stopAnimation();
       animation.setValue(0);
 
-      Animated.spring(animation, {
+      Animated.timing(animation, {
         toValue: 1,
-        damping: 18,
-        stiffness: 230,
-        mass: 0.7,
+        duration: 120,
         useNativeDriver: true,
       }).start();
 
@@ -139,14 +137,6 @@ export function ToastProvider({ children }: PropsWithChildren) {
             styles.viewport,
             {
               opacity: animation,
-              transform: [
-                {
-                  translateY: animation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-16, 0],
-                  }),
-                },
-              ],
             },
           ]}
         >
