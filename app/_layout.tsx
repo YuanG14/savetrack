@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SQLiteProvider } from 'expo-sqlite';
 
+import { AuthProvider } from '../contexts/AuthContext';
 import { BudgetProvider } from '../contexts/BudgetContext';
 import { GoalProvider } from '../contexts/GoalContext';
 import { NotificationProvider } from '../contexts/NotificationContext';
@@ -12,8 +13,9 @@ import { migrateDbIfNeeded } from '../database/migrations';
 
 export default function RootLayout() {
   return (
-    <SQLiteProvider databaseName="savetrack.db" onInit={migrateDbIfNeeded}>
-      <TransactionProvider>
+    <AuthProvider>
+      <SQLiteProvider databaseName="savetrack.db" onInit={migrateDbIfNeeded}>
+        <TransactionProvider>
         <SavingsProvider>
           <GoalProvider>
             <SafeSpendProvider>
@@ -35,13 +37,15 @@ export default function RootLayout() {
                     <Stack.Screen name="budgets" />
                     <Stack.Screen name="budget-editor" />
                     <Stack.Screen name="notifications" />
+                    <Stack.Screen name="cloud" />
                   </Stack>
                 </NotificationProvider>
               </BudgetProvider>
             </SafeSpendProvider>
           </GoalProvider>
         </SavingsProvider>
-      </TransactionProvider>
-    </SQLiteProvider>
+        </TransactionProvider>
+      </SQLiteProvider>
+    </AuthProvider>
   );
 }

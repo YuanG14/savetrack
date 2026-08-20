@@ -355,6 +355,24 @@ export default function HomeScreen() {
         </View>
 
         <Pressable
+          style={styles.cloudShortcut}
+          onPress={() => router.push('/cloud')}
+        >
+          <View style={styles.cloudShortcutIcon}>
+            <Ionicons name="cloud-outline" size={19} color={Colors.primary} />
+          </View>
+
+          <View style={styles.cloudShortcutText}>
+            <Text style={styles.cloudShortcutTitle}>Account & cloud backup</Text>
+            <Text style={styles.cloudShortcutMeta}>
+              Keep an optional cloud copy of your SaveTrack data.
+            </Text>
+          </View>
+
+          <Ionicons name="chevron-forward" size={17} color={Colors.textMuted} />
+        </Pressable>
+
+        <Pressable
           style={[
             styles.budgetShortcut,
             budgetAlerts > 0 && styles.budgetShortcutWarning,
@@ -698,6 +716,40 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   miniCardMeta: { color: Colors.textMuted, fontSize: 9, marginTop: 5 },
+  cloudShortcut: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 18,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  cloudShortcutIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cloudShortcutText: {
+    flex: 1,
+    marginLeft: 10,
+    marginRight: 8,
+  },
+  cloudShortcutTitle: {
+    color: Colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  cloudShortcutMeta: {
+    color: Colors.textMuted,
+    fontSize: 9,
+    lineHeight: 14,
+    marginTop: 3,
+  },
   budgetShortcut: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
