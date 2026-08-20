@@ -224,8 +224,32 @@ export default function HomeScreen() {
           </View>
         </Pressable>
 
+        <View style={styles.toolsRow}>
+          <Pressable
+            style={styles.toolShortcut}
+            onPress={() => router.push('/what-if')}
+          >
+            <View style={styles.toolIcon}>
+              <Ionicons name="git-compare-outline" size={19} color={Colors.primary} />
+            </View>
+            <Text style={styles.toolTitle}>What if?</Text>
+            <Text style={styles.toolMeta}>Simulate changes</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.toolShortcut}
+            onPress={() => router.push('/can-i-afford-it')}
+          >
+            <View style={styles.toolIcon}>
+              <Ionicons name="bag-check-outline" size={19} color={Colors.primary} />
+            </View>
+            <Text style={styles.toolTitle}>Can I afford it?</Text>
+            <Text style={styles.toolMeta}>Check a purchase</Text>
+          </Pressable>
+        </View>
+
         <Pressable
-          style={styles.affordabilityShortcut}
+          style={styles.affordabilityShortcutHidden}
           onPress={() => router.push('/can-i-afford-it')}
         >
           <View style={styles.affordabilityShortcutIcon}>
@@ -430,6 +454,41 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   safeLink: { color: Colors.primary, fontSize: 10, fontWeight: '800' },
+  toolsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 14,
+  },
+  toolShortcut: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 18,
+    padding: 14,
+  },
+  toolIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  toolTitle: {
+    color: Colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  toolMeta: {
+    color: Colors.textMuted,
+    fontSize: 9,
+    marginTop: 3,
+  },
+  affordabilityShortcutHidden: {
+    display: 'none',
+  },
   affordabilityShortcut: {
     backgroundColor: Colors.surface,
     borderWidth: 1,

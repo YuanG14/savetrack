@@ -317,6 +317,24 @@ export default function PlannerScreen() {
           ) : null}
 
           <Pressable
+            style={styles.whatIfButton}
+            onPress={() => router.push('/what-if')}
+          >
+            <View style={styles.whatIfIcon}>
+              <Ionicons name="git-compare-outline" size={21} color={Colors.primary} />
+            </View>
+
+            <View style={styles.whatIfText}>
+              <Text style={styles.whatIfTitle}>What if I changed my finances?</Text>
+              <Text style={styles.whatIfMeta}>
+                Simulate extra income, lower spending, or faster saving.
+              </Text>
+            </View>
+
+            <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+          </Pressable>
+
+          <Pressable
             style={styles.affordabilityButton}
             onPress={() => router.push('/can-i-afford-it')}
           >
@@ -565,6 +583,40 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   buttonDisabled: { opacity: 0.7 },
+  whatIfButton: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 18,
+    padding: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  whatIfIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  whatIfText: {
+    flex: 1,
+    marginLeft: 11,
+    marginRight: 8,
+  },
+  whatIfTitle: {
+    color: Colors.text,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  whatIfMeta: {
+    color: Colors.textSecondary,
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 3,
+  },
   affordabilityButton: {
     backgroundColor: Colors.primarySoft,
     borderRadius: 18,
