@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const DATABASE_VERSION = 3;
+const DATABASE_VERSION = 4;
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
   await db.execAsync(`
@@ -94,6 +94,25 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
     `);
 
     currentDbVersion = 3;
+  }
+
+  if (currentDbVersion < 4) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS planned_commitments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+        due_date TEXT NOT NULL,
+        category TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_planned_commitments_due_date
+      ON planned_commitments(due_date ASC);
+    `);
+
+    currentDbVersion = 4;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);

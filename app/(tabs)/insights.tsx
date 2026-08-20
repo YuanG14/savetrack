@@ -5,14 +5,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '../../constants/theme';
 import { useGoals } from '../../contexts/GoalContext';
+import { useSafeSpend } from '../../contexts/SafeSpendContext';
 import { useSavings } from '../../contexts/SavingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { formatCurrencyFromCents } from '../../utils/currency';
+import {
+  calculateSafeToSpend,
+  getCommitmentsBeforeDate,
+} from '../../utils/safe-spend';
 
 export default function InsightsScreen() {
   const { transactions } = useTransactions();
   const { currentSavingsCents } = useSavings();
   const { totalAllocatedCents, goals } = useGoals();
+  const { commitments, nextIncomeDate } = useSafeSpend();
 
   const totals = useMemo(() => {
     const incomeCents = transactions
@@ -22,8 +28,36 @@ export default function InsightsScreen() {
       .filter((item) => item.type === 'expense')
       .reduce((sum, item) => sum + item.amountCents, 0);
 
-    return { incomeCents, expenseCents };
-  }, [transactions]);
+    const balanceCents = incomeCents - expenseCents;
+
+    const dueCommitments = getCommitmentsBeforeDate(
+      commitments,
+      nextIncomeDate
+    );
+
+    const commitmentCents = dueCommitments.reduce(
+      (sum, item) => sum + item.amountCents,
+      0
+    );
+
+    const safeCents = calculateSafeToSpend(
+      balanceCents,
+      currentSavingsCents,
+      commitmentCents
+    );
+
+    return {
+      incomeCents,
+      expenseCents,
+      commitmentCents,
+      safeCents,
+    };
+  }, [
+    transactions,
+    commitments,
+    nextIncomeDate,
+    currentSavingsCents,
+  ]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -57,6 +91,24 @@ export default function InsightsScreen() {
             iconBackground={Colors.primarySoft}
             label="Reserved savings"
             value={formatCurrencyFromCents(currentSavingsCents)}
+          />
+          <View style={styles.divider} />
+          <MetricRow
+            icon="calendar-outline"
+            iconColor={Colors.warning}
+            iconBackground={Colors.warningSoft}
+            label="Upcoming commitments"
+            value={formatCurrencyFromCents(totals.commitmentCents)}
+          />
+          <View style={styles.divider} />
+          <MetricRow
+            icon="shield-checkmark-outline"
+            iconColor={totals.safeCents >= 0 ? Colors.success : Colors.danger}
+            iconBackground={
+              totals.safeCents >= 0 ? Colors.successSoft : Colors.dangerSoft
+            }
+            label="Safe to spend"
+            value={formatCurrencyFromCents(totals.safeCents)}
           />
           <View style={styles.divider} />
           <MetricRow
@@ -139,7 +191,7 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: Colors.border,
-    marginVertical: 17,
+    marginVertical: 14,
     marginLeft: 58,
   },
 });
