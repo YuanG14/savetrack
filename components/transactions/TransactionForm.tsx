@@ -367,6 +367,10 @@ export function TransactionForm({
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={handleDateChange}
                 maximumDate={new Date()}
+                themeVariant={Platform.OS === 'ios' ? 'light' : undefined}
+                textColor={Platform.OS === 'ios' ? Colors.text : undefined}
+                accentColor={Colors.primary}
+                style={styles.datePicker}
               />
 
               {Platform.OS === 'ios' ? (
@@ -604,9 +608,15 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
+    paddingTop: Platform.OS === 'ios' ? 6 : 0,
     paddingBottom: Platform.OS === 'ios' ? 10 : 0,
+  },
+  datePicker: {
+    width: '100%',
+    height: Platform.OS === 'ios' ? 190 : undefined,
+    backgroundColor: '#FFFFFF',
   },
   doneButton: {
     alignSelf: 'flex-end',
