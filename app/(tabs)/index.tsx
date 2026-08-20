@@ -11,8 +11,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { GoalCard } from '../../components/goals/GoalCard';
 import { TransactionRow } from '../../components/transactions/TransactionRow';
 import { Colors } from '../../constants/theme';
+import { useGoals } from '../../contexts/GoalContext';
 import { useSavings } from '../../contexts/SavingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { formatCurrencyFromCents } from '../../utils/currency';
@@ -21,10 +23,12 @@ import { getCurrentMonthKey } from '../../utils/date';
 export default function HomeScreen() {
   const router = useRouter();
   const { transactions, loading: transactionsLoading } = useTransactions();
+  const { currentSavingsCents, loading: savingsLoading } = useSavings();
   const {
-    currentSavingsCents,
-    loading: savingsLoading,
-  } = useSavings();
+    goals,
+    totalAllocatedCents,
+    loading: goalsLoading,
+  } = useGoals();
 
   const summary = useMemo(() => {
     const monthKey = getCurrentMonthKey();
@@ -59,8 +63,9 @@ export default function HomeScreen() {
     };
   }, [transactions, currentSavingsCents]);
 
-  const recentTransactions = transactions.slice(0, 5);
-  const loading = transactionsLoading || savingsLoading;
+  const recentTransactions = transactions.slice(0, 4);
+  const featuredGoal = goals[0];
+  const loading = transactionsLoading || savingsLoading || goalsLoading;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -75,8 +80,6 @@ export default function HomeScreen() {
           </View>
 
           <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add transaction"
             style={styles.headerAddButton}
             onPress={() => router.push('/add-transaction')}
           >
@@ -113,9 +116,6 @@ export default function HomeScreen() {
 
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
-            <View style={[styles.summaryIcon, styles.incomeIcon]}>
-              <Ionicons name="arrow-down" size={18} color={Colors.success} />
-            </View>
             <Text style={styles.summaryLabel}>Income</Text>
             <Text style={styles.summaryValue}>
               {formatCurrencyFromCents(summary.incomeCents)}
@@ -123,9 +123,6 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.summaryCard}>
-            <View style={[styles.summaryIcon, styles.expenseIcon]}>
-              <Ionicons name="arrow-up" size={18} color={Colors.danger} />
-            </View>
             <Text style={styles.summaryLabel}>Spent</Text>
             <Text style={styles.summaryValue}>
               {formatCurrencyFromCents(summary.expenseCents)}
@@ -138,24 +135,16 @@ export default function HomeScreen() {
             style={styles.savingsCard}
             onPress={() => router.push('/goals')}
           >
-            <View style={styles.miniCardHeader}>
-              <View style={styles.miniCardIcon}>
-                <Ionicons name="lock-closed-outline" size={18} color={Colors.primary} />
-              </View>
-              <Ionicons name="chevron-forward" size={17} color={Colors.textMuted} />
-            </View>
             <Text style={styles.miniCardLabel}>Reserved savings</Text>
             <Text style={styles.miniCardValue}>
               {formatCurrencyFromCents(currentSavingsCents)}
             </Text>
+            <Text style={styles.miniCardMeta}>
+              {formatCurrencyFromCents(totalAllocatedCents)} assigned to goals
+            </Text>
           </Pressable>
 
           <View style={styles.safeToSpendCard}>
-            <View style={styles.miniCardHeader}>
-              <View style={styles.safeIcon}>
-                <Ionicons name="shield-checkmark-outline" size={18} color={Colors.success} />
-              </View>
-            </View>
             <Text style={styles.miniCardLabel}>Safe to spend</Text>
             <Text
               style={[
@@ -165,19 +154,23 @@ export default function HomeScreen() {
             >
               {formatCurrencyFromCents(summary.safeToSpendCents)}
             </Text>
+            <Text style={styles.miniCardMeta}>After reserved savings</Text>
           </View>
         </View>
 
-        {summary.safeToSpendCents < 0 ? (
-          <View style={styles.warningCard}>
-            <Ionicons name="warning-outline" size={20} color={Colors.warning} />
-            <Text style={styles.warningText}>
-              Your reserved savings are higher than your current available balance.
-            </Text>
-          </View>
+        {featuredGoal ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Priority goal</Text>
+              <Pressable onPress={() => router.push('/goals')}>
+                <Text style={styles.viewAll}>View goals</Text>
+              </Pressable>
+            </View>
+            <GoalCard goal={featuredGoal} />
+          </>
         ) : null}
 
-        <View style={styles.sectionHeader}>
+        <View style={[styles.sectionHeader, styles.transactionsHeader]}>
           <Text style={styles.sectionTitle}>Recent transactions</Text>
           <Pressable onPress={() => router.push('/transactions')}>
             <Text style={styles.viewAll}>View all</Text>
@@ -187,24 +180,13 @@ export default function HomeScreen() {
         {transactionsLoading ? (
           <View style={styles.loadingCard}>
             <ActivityIndicator color={Colors.primary} />
-            <Text style={styles.loadingText}>Loading transactions...</Text>
           </View>
         ) : recentTransactions.length === 0 ? (
           <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
-              <Ionicons name="receipt-outline" size={26} color={Colors.primary} />
-            </View>
             <Text style={styles.emptyTitle}>No transactions yet</Text>
             <Text style={styles.emptyDescription}>
               Add your first income or expense to start tracking your money.
             </Text>
-            <Pressable
-              style={styles.primaryButton}
-              onPress={() => router.push('/add-transaction')}
-            >
-              <Ionicons name="add" size={18} color="#FFFFFF" />
-              <Text style={styles.primaryButtonText}>Add transaction</Text>
-            </Pressable>
           </View>
         ) : (
           <View style={styles.transactionList}>
@@ -287,94 +269,42 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  summaryIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-  incomeIcon: { backgroundColor: Colors.successSoft },
-  expenseIcon: { backgroundColor: Colors.dangerSoft },
   summaryLabel: { color: Colors.textSecondary, fontSize: 12, marginBottom: 5 },
   summaryValue: { color: Colors.text, fontSize: 18, fontWeight: '800' },
-  moneyStatusGrid: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  moneyStatusGrid: { flexDirection: 'row', gap: 12, marginBottom: 26 },
   savingsCard: {
     flex: 1,
     backgroundColor: Colors.primarySoft,
     borderRadius: 20,
     padding: 17,
-    minHeight: 132,
   },
   safeToSpendCard: {
     flex: 1,
     backgroundColor: Colors.successSoft,
     borderRadius: 20,
     padding: 17,
-    minHeight: 132,
   },
-  miniCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  miniCardIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  safeIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  miniCardLabel: {
-    color: Colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '700',
-  },
+  miniCardLabel: { color: Colors.textSecondary, fontSize: 11, fontWeight: '700' },
   miniCardValue: {
     color: Colors.text,
     fontSize: 18,
     fontWeight: '800',
-    marginTop: 5,
+    marginTop: 6,
   },
+  miniCardMeta: { color: Colors.textMuted, fontSize: 9, marginTop: 5 },
   negativeValue: { color: Colors.danger },
-  warningCard: {
-    flexDirection: 'row',
-    gap: 9,
-    alignItems: 'flex-start',
-    backgroundColor: Colors.warningSoft,
-    padding: 14,
-    borderRadius: 16,
-    marginBottom: 26,
-  },
-  warningText: {
-    flex: 1,
-    color: Colors.warningDark,
-    fontSize: 12,
-    lineHeight: 18,
-  },
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 14,
+    justifyContent: 'space-between',
   },
   viewAll: {
     color: Colors.primary,
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
     marginBottom: 14,
   },
+  transactionsHeader: { marginTop: 26 },
   loadingCard: {
     backgroundColor: Colors.surface,
     borderRadius: 20,
@@ -382,9 +312,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     padding: 28,
     alignItems: 'center',
-    gap: 10,
   },
-  loadingText: { color: Colors.textSecondary, fontSize: 13 },
   emptyState: {
     backgroundColor: Colors.surface,
     borderRadius: 22,
@@ -393,40 +321,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  emptyIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    backgroundColor: Colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-  emptyTitle: {
-    color: Colors.text,
-    fontSize: 16,
-    fontWeight: '800',
-    marginBottom: 6,
-  },
+  emptyTitle: { color: Colors.text, fontSize: 16, fontWeight: '800' },
   emptyDescription: {
     color: Colors.textSecondary,
     fontSize: 13,
     textAlign: 'center',
-    lineHeight: 19,
-    maxWidth: 280,
+    marginTop: 6,
   },
-  primaryButton: {
-    marginTop: 18,
-    minHeight: 46,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-  },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 13 },
   transactionList: {
     backgroundColor: Colors.surface,
     borderRadius: 22,

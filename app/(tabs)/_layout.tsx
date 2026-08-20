@@ -43,9 +43,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="goals"
         options={{
-          title: 'Savings',
+          title: 'Goals',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="wallet-outline" size={size} color={color} />
+            <Ionicons name="flag-outline" size={size} color={color} />
           ),
         }}
       />
