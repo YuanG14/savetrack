@@ -140,41 +140,44 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.eyebrow}>SAVETRACK</Text>
-            <Text style={styles.title}>Your money today</Text>
-          </View>
+        <View style={styles.brandRow}>
+          <Text style={styles.eyebrow}>SAVETRACK</Text>
 
-          <View style={styles.headerActions}>
-            <Pressable
-              style={styles.notificationButton}
-              onPress={() => router.push('/notifications')}
-            >
-              <Ionicons
-                name={
-                  notificationPreferences.enabled &&
-                  notificationPermission === 'granted'
-                    ? 'notifications-outline'
-                    : 'notifications-off-outline'
-                }
-                size={20}
-                color={Colors.primary}
-              />
+          <Pressable
+            style={styles.notificationButton}
+            onPress={() => router.push('/notifications')}
+            accessibilityRole="button"
+            accessibilityLabel="Notification settings"
+          >
+            <Ionicons
+              name={
+                notificationPreferences.enabled &&
+                notificationPermission === 'granted'
+                  ? 'notifications-outline'
+                  : 'notifications-off-outline'
+              }
+              size={19}
+              color={Colors.primary}
+            />
 
-              {notificationPreferences.enabled &&
-              notificationPermission === 'granted' ? (
-                <View style={styles.notificationDot} />
-              ) : null}
-            </Pressable>
+            {notificationPreferences.enabled &&
+            notificationPermission === 'granted' ? (
+              <View style={styles.notificationDot} />
+            ) : null}
+          </Pressable>
+        </View>
 
-            <Pressable
-              style={styles.headerAddButton}
-              onPress={() => router.push('/add-transaction')}
-            >
-              <Ionicons name="add" size={23} color="#FFFFFF" />
-            </Pressable>
-          </View>
+        <View style={styles.heroTitleRow}>
+          <Text style={styles.title}>Your money today</Text>
+
+          <Pressable
+            style={styles.headerAddButton}
+            onPress={() => router.push('/add-transaction')}
+            accessibilityRole="button"
+            accessibilityLabel="Add transaction"
+          >
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </Pressable>
         </View>
 
         <View style={styles.balanceCard}>
@@ -460,29 +463,37 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: Colors.background },
   content: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 120 },
-  header: {
+  brandRow: {
+    minHeight: 38,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 8,
   },
   eyebrow: {
     color: Colors.primary,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.5,
-    marginBottom: 5,
   },
-  title: { color: Colors.text, fontSize: 28, fontWeight: '800' },
-  headerActions: {
+  heroTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
+    justifyContent: 'space-between',
+    gap: 14,
+    marginBottom: 24,
+  },
+  title: {
+    flex: 1,
+    color: Colors.text,
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '800',
   },
   notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
+    width: 38,
+    height: 38,
+    borderRadius: 13,
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -491,8 +502,8 @@ const styles = StyleSheet.create({
   },
   notificationDot: {
     position: 'absolute',
-    top: 9,
-    right: 9,
+    top: 7,
+    right: 7,
     width: 7,
     height: 7,
     borderRadius: 999,
@@ -501,8 +512,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.surface,
   },
   headerAddButton: {
-    width: 46,
-    height: 46,
+    width: 48,
+    height: 48,
     borderRadius: 16,
     backgroundColor: Colors.primary,
     alignItems: 'center',
