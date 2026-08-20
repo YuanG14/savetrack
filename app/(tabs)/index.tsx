@@ -19,6 +19,7 @@ import { useNotifications } from '../../contexts/NotificationContext';
 import { useGoals } from '../../contexts/GoalContext';
 import { useSafeSpend } from '../../contexts/SafeSpendContext';
 import { useSavings } from '../../contexts/SavingsContext';
+import { useSecurity } from '../../contexts/SecurityContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import {
   calculateBudgetProgress,
@@ -52,6 +53,9 @@ export default function HomeScreen() {
     preferences: notificationPreferences,
     permissionState: notificationPermission,
   } = useNotifications();
+  const {
+    preferences: securityPreferences,
+  } = useSecurity();
 
   const summary = useMemo(() => {
     const monthKey = getCurrentMonthKey();
@@ -126,6 +130,8 @@ export default function HomeScreen() {
   const budgetAlerts = budgetProgress.filter(
     (item) => item.status === 'warning' || item.status === 'over'
   ).length;
+
+  void securityPreferences.hideBalancesEnabled;
 
   const loading =
     transactionsLoading ||
@@ -363,9 +369,9 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.cloudShortcutText}>
-            <Text style={styles.cloudShortcutTitle}>Account & cloud backup</Text>
+            <Text style={styles.cloudShortcutTitle}>Account & privacy</Text>
             <Text style={styles.cloudShortcutMeta}>
-              Keep an optional cloud copy of your SaveTrack data.
+              Manage cloud backup, sign-in, and app security.
             </Text>
           </View>
 

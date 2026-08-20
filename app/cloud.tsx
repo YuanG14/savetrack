@@ -246,6 +246,34 @@ export default function CloudScreen() {
 
           <CloudStatusCard metadata={metadata} signedIn={Boolean(user)} />
 
+          <Pressable
+            style={styles.securityShortcut}
+            onPress={() => router.push('/security')}
+          >
+            <View style={styles.securityShortcutIcon}>
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={21}
+                color={Colors.primary}
+              />
+            </View>
+
+            <View style={styles.securityShortcutText}>
+              <Text style={styles.securityShortcutTitle}>
+                Security & privacy
+              </Text>
+              <Text style={styles.securityShortcutDescription}>
+                App PIN, auto-lock, privacy masking, and device authentication.
+              </Text>
+            </View>
+
+            <Ionicons
+              name="chevron-forward"
+              size={17}
+              color={Colors.textMuted}
+            />
+          </Pressable>
+
           {configured && !user ? (
             <View style={styles.authCard}>
               <View style={styles.segment}>
@@ -415,6 +443,40 @@ const styles = StyleSheet.create({
   setupText: { flex: 1, marginLeft: 11 },
   setupTitle: { color: Colors.text, fontSize: 12, fontWeight: '800' },
   setupBody: { color: Colors.textSecondary, fontSize: 10, lineHeight: 15, marginTop: 4 },
+  securityShortcut: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 19,
+    padding: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 14,
+  },
+  securityShortcutIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  securityShortcutText: {
+    flex: 1,
+    marginLeft: 11,
+    marginRight: 8,
+  },
+  securityShortcutTitle: {
+    color: Colors.text,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  securityShortcutDescription: {
+    color: Colors.textSecondary,
+    fontSize: 9,
+    lineHeight: 14,
+    marginTop: 3,
+  },
   authCard: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 21, padding: 17, marginTop: 14 },
   segment: { flexDirection: 'row', backgroundColor: Colors.background, borderRadius: 14, padding: 4 },
   segmentButton: { flex: 1, minHeight: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
