@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '../constants/theme';
 import { useSafeSpend } from '../contexts/SafeSpendContext';
+import { useToast } from '../contexts/ToastContext';
 import type { CommitmentInput } from '../types/safe-spend';
 import { getTodayDateString, isValidDateString } from '../utils/date';
 
@@ -46,6 +47,7 @@ export default function CommitmentEditorScreen() {
     updateCommitment,
     deleteCommitment,
   } = useSafeSpend();
+  const { showToast } = useToast();
 
   const id = params.id ? Number(params.id) : null;
 
@@ -111,6 +113,11 @@ export default function CommitmentEditorScreen() {
         await addCommitment(input);
       }
       router.back();
+      showToast({
+        title: existing ? 'Commitment updated' : 'Commitment added',
+        message: 'Safe-to-Spend has been recalculated.',
+        tone: 'success',
+      });
     } catch (error) {
       console.error(error);
       Alert.alert('Could not save commitment', 'Please try again.');
@@ -134,6 +141,11 @@ export default function CommitmentEditorScreen() {
             try {
               await deleteCommitment(existing.id);
               router.back();
+              showToast({
+                title: 'Commitment deleted',
+                message: 'Safe-to-Spend has been recalculated.',
+                tone: 'success',
+              });
             } catch (error) {
               console.error(error);
               Alert.alert('Could not delete commitment', 'Please try again.');

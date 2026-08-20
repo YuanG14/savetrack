@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -13,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TransactionRow } from '../../components/transactions/TransactionRow';
+import { TransactionListSkeleton } from '../../components/ui/TransactionListSkeleton';
 import { Colors } from '../../constants/theme';
 import { useTransactions } from '../../contexts/TransactionContext';
 import type { TransactionFilter } from '../../types/transaction';
@@ -71,6 +71,15 @@ export default function TransactionsScreen() {
               <Pressable
                 key={item}
                 onPress={() => setFilter(item)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`Show ${
+                  item === 'all'
+                    ? 'all transactions'
+                    : item === 'expense'
+                      ? 'expense transactions'
+                      : 'income transactions'
+                }`}
                 style={[styles.filterChip, active && styles.filterChipActive]}
               >
                 <Text
@@ -91,10 +100,7 @@ export default function TransactionsScreen() {
         </View>
 
         {loading ? (
-          <View style={styles.centerState}>
-            <ActivityIndicator color={Colors.primary} />
-            <Text style={styles.stateText}>Loading transactions...</Text>
-          </View>
+          <TransactionListSkeleton />
         ) : (
           <FlatList
             data={filteredTransactions}
@@ -107,6 +113,9 @@ export default function TransactionsScreen() {
             }
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             showsVerticalScrollIndicator={false}
+            initialNumToRender={12}
+            maxToRenderPerBatch={12}
+            windowSize={7}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}

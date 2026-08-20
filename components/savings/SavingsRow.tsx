@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -10,7 +11,7 @@ type Props = {
   entry: SavingsEntry;
 };
 
-export function SavingsRow({ entry }: Props) {
+function SavingsRow({ entry }: Props) {
   const isDeposit = entry.type === 'deposit';
 
   return (
@@ -78,3 +79,7 @@ const styles = StyleSheet.create({
   depositAmount: { color: Colors.success },
   withdrawAmount: { color: Colors.warning },
 });
+
+export default memo(SavingsRow);
+export const MemoizedSavingsRow = memo(SavingsRow);
+export { MemoizedSavingsRow as SavingsRow };

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -12,7 +13,7 @@ type TransactionRowProps = {
   transaction: Transaction;
 };
 
-export function TransactionRow({ transaction }: TransactionRowProps) {
+function TransactionRow({ transaction }: TransactionRowProps) {
   const router = useRouter();
   const category = getCategory(transaction.category);
   const isIncome = transaction.type === 'income';
@@ -129,3 +130,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
 });
+
+export default memo(TransactionRow);
+export const MemoizedTransactionRow = memo(TransactionRow);
+export { MemoizedTransactionRow as TransactionRow };

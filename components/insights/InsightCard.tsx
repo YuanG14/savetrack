@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -26,7 +27,7 @@ const tones = {
   },
 };
 
-export function InsightCard({ insight }: Props) {
+function InsightCard({ insight }: Props) {
   const tone = tones[insight.tone];
 
   return (
@@ -72,3 +73,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 });
+
+export default memo(InsightCard);
+export const MemoizedInsightCard = memo(InsightCard);
+export { MemoizedInsightCard as InsightCard };

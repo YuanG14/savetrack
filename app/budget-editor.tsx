@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { transactionCategories } from '../constants/categories';
 import { Colors } from '../constants/theme';
 import { useBudgets } from '../contexts/BudgetContext';
+import { useToast } from '../contexts/ToastContext';
 import type { BudgetInput } from '../types/budget';
 
 function cleanMoney(value: string): string {
@@ -44,6 +45,7 @@ export default function BudgetEditorScreen() {
     updateBudget,
     deleteBudget,
   } = useBudgets();
+  const { showToast } = useToast();
 
   const id = params.id ? Number(params.id) : null;
 
@@ -113,6 +115,11 @@ export default function BudgetEditorScreen() {
       }
 
       router.back();
+      showToast({
+        title: existing ? 'Budget updated' : 'Budget created',
+        message: `${category} will be tracked automatically this month.`,
+        tone: 'success',
+      });
     } catch (error) {
       console.error(error);
       Alert.alert('Could not save budget', 'Please try again.');
@@ -136,6 +143,10 @@ export default function BudgetEditorScreen() {
             try {
               await deleteBudget(existing.id);
               router.back();
+              showToast({
+                title: 'Budget deleted',
+                tone: 'success',
+              });
             } catch (error) {
               console.error(error);
               Alert.alert('Could not delete budget', 'Please try again.');

@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TransactionForm } from '../../components/transactions/TransactionForm';
 import { Colors } from '../../constants/theme';
+import { useToast } from '../../contexts/ToastContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import type { TransactionInput } from '../../types/transaction';
 
@@ -20,6 +21,7 @@ export default function EditTransactionScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const { transactions, loading, updateTransaction, deleteTransaction } =
     useTransactions();
+  const { showToast } = useToast();
 
   const id = Number(params.id);
 
@@ -59,6 +61,11 @@ export default function EditTransactionScreen() {
     try {
       await updateTransaction(id, input);
       router.back();
+      showToast({
+        title: 'Transaction updated',
+        message: 'The changes were saved successfully.',
+        tone: 'success',
+      });
     } catch (error) {
       console.error(error);
       Alert.alert(
@@ -82,6 +89,10 @@ export default function EditTransactionScreen() {
             try {
               await deleteTransaction(id);
               router.back();
+              showToast({
+                title: 'Transaction deleted',
+                tone: 'success',
+              });
             } catch (error) {
               console.error(error);
               Alert.alert(

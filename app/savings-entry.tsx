@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../constants/theme';
 import { useGoals } from '../contexts/GoalContext';
 import { useSavings } from '../contexts/SavingsContext';
+import { useToast } from '../contexts/ToastContext';
 import type { SavingsEntryType } from '../types/savings';
 import { formatCurrencyFromCents } from '../utils/currency';
 import { getTodayDateString, isValidDateString } from '../utils/date';
@@ -27,6 +28,7 @@ export default function SavingsEntryScreen() {
   const params = useLocalSearchParams<{ type?: string }>();
   const { currentSavingsCents, addSavingsEntry } = useSavings();
   const { totalAllocatedCents } = useGoals();
+  const { showToast } = useToast();
 
   const initialType: SavingsEntryType =
     params.type === 'withdrawal' ? 'withdrawal' : 'deposit';
@@ -97,6 +99,14 @@ export default function SavingsEntryScreen() {
         entryDate,
       });
       router.back();
+      showToast({
+        title: type === 'deposit' ? 'Savings added' : 'Savings withdrawn',
+        message:
+          type === 'deposit'
+            ? 'Your reserved savings were updated.'
+            : 'The amount is available to spend again.',
+        tone: 'success',
+      });
     } catch (error) {
       console.error(error);
       Alert.alert('Could not save', 'Please try again.');

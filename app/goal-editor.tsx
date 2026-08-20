@@ -3,12 +3,14 @@ import { Alert } from 'react-native';
 
 import { GoalForm } from '../components/goals/GoalForm';
 import { useGoals } from '../contexts/GoalContext';
+import { useToast } from '../contexts/ToastContext';
 import type { GoalInput } from '../types/goal';
 
 export default function GoalEditorScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
   const { goals, createGoal, updateGoal } = useGoals();
+  const { showToast } = useToast();
 
   const id = params.id ? Number(params.id) : null;
   const existingGoal =
@@ -25,6 +27,13 @@ export default function GoalEditorScreen() {
       }
 
       router.back();
+      showToast({
+        title: existingGoal ? 'Goal updated' : 'Goal created',
+        message: existingGoal
+          ? 'Your savings target was updated.'
+          : 'You can start allocating savings to it now.',
+        tone: 'success',
+      });
     } catch (error) {
       console.error(error);
       Alert.alert(

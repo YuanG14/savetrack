@@ -2,17 +2,24 @@ import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 
 import { TransactionForm } from '../components/transactions/TransactionForm';
+import { useToast } from '../contexts/ToastContext';
 import { useTransactions } from '../contexts/TransactionContext';
 import type { TransactionInput } from '../types/transaction';
 
 export default function AddTransactionScreen() {
   const router = useRouter();
   const { addTransaction } = useTransactions();
+  const { showToast } = useToast();
 
   const handleSubmit = async (input: TransactionInput) => {
     try {
       await addTransaction(input);
       router.back();
+      showToast({
+        title: input.type === 'income' ? 'Income added' : 'Expense added',
+        message: 'Your balance and insights are updated.',
+        tone: 'success',
+      });
     } catch (error) {
       console.error(error);
       Alert.alert(

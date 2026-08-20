@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -11,7 +12,7 @@ type Props = {
   budget: BudgetProgress;
 };
 
-export function BudgetCard({ budget }: Props) {
+function BudgetCard({ budget }: Props) {
   const router = useRouter();
   const category = getCategory(budget.category);
 
@@ -194,3 +195,7 @@ const styles = StyleSheet.create({
     color: Colors.danger,
   },
 });
+
+export default memo(BudgetCard);
+export const MemoizedBudgetCard = memo(BudgetCard);
+export { MemoizedBudgetCard as BudgetCard };
