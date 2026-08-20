@@ -14,10 +14,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GoalCard } from '../../components/goals/GoalCard';
 import { TransactionRow } from '../../components/transactions/TransactionRow';
 import { Colors } from '../../constants/theme';
+import { useBudgets } from '../../contexts/BudgetContext';
 import { useGoals } from '../../contexts/GoalContext';
 import { useSafeSpend } from '../../contexts/SafeSpendContext';
 import { useSavings } from '../../contexts/SavingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
+import {
+  calculateBudgetProgress,
+  getTotalBudgetSummary,
+} from '../../utils/budget';
 import { formatCurrencyFromCents } from '../../utils/currency';
 import { getCurrentMonthKey } from '../../utils/date';
 import {
@@ -41,6 +46,7 @@ export default function HomeScreen() {
     nextIncomeDate,
     loading: safeSpendLoading,
   } = useSafeSpend();
+  const { budgets, loading: budgetsLoading } = useBudgets();
 
   const summary = useMemo(() => {
     const monthKey = getCurrentMonthKey();
@@ -101,8 +107,27 @@ export default function HomeScreen() {
 
   const recentTransactions = transactions.slice(0, 4);
   const featuredGoal = goals[0];
+
+  const budgetProgress = useMemo(
+    () => calculateBudgetProgress(budgets, transactions),
+    [budgets, transactions]
+  );
+
+  const budgetSummary = useMemo(
+    () => getTotalBudgetSummary(budgetProgress),
+    [budgetProgress]
+  );
+
+  const budgetAlerts = budgetProgress.filter(
+    (item) => item.status === 'warning' || item.status === 'over'
+  ).length;
+
   const loading =
-    transactionsLoading || savingsLoading || goalsLoading || safeSpendLoading;
+    transactionsLoading ||
+    savingsLoading ||
+    goalsLoading ||
+    safeSpendLoading ||
+    budgetsLoading;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -297,6 +322,52 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
         </View>
+
+        <Pressable
+          style={[
+            styles.budgetShortcut,
+            budgetAlerts > 0 && styles.budgetShortcutWarning,
+          ]}
+          onPress={() => router.push('/budgets')}
+        >
+          <View
+            style={[
+              styles.budgetShortcutIcon,
+              budgetAlerts > 0 && styles.budgetShortcutIconWarning,
+            ]}
+          >
+            <Ionicons
+              name="pie-chart-outline"
+              size={19}
+              color={budgetAlerts > 0 ? Colors.warning : Colors.primary}
+            />
+          </View>
+
+          <View style={styles.budgetShortcutText}>
+            <Text style={styles.budgetShortcutTitle}>Monthly budgets</Text>
+            <Text style={styles.budgetShortcutMeta}>
+              {budgets.length === 0
+                ? 'Set category spending limits'
+                : `${formatCurrencyFromCents(
+                    budgetSummary.totalSpentCents
+                  )} of ${formatCurrencyFromCents(
+                    budgetSummary.totalLimitCents
+                  )} used`}
+            </Text>
+          </View>
+
+          {budgetAlerts > 0 ? (
+            <View style={styles.budgetAlertPill}>
+              <Text style={styles.budgetAlertText}>{budgetAlerts}</Text>
+            </View>
+          ) : (
+            <Ionicons
+              name="chevron-forward"
+              size={17}
+              color={Colors.textMuted}
+            />
+          )}
+        </Pressable>
 
         <Pressable
           style={styles.insightsShortcut}
@@ -562,6 +633,61 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   miniCardMeta: { color: Colors.textMuted, fontSize: 9, marginTop: 5 },
+  budgetShortcut: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 18,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  budgetShortcutWarning: {
+    backgroundColor: Colors.warningSoft,
+    borderColor: '#FDE68A',
+  },
+  budgetShortcutIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  budgetShortcutIconWarning: {
+    backgroundColor: '#FFFFFF',
+  },
+  budgetShortcutText: {
+    flex: 1,
+    marginLeft: 10,
+    marginRight: 8,
+  },
+  budgetShortcutTitle: {
+    color: Colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  budgetShortcutMeta: {
+    color: Colors.textMuted,
+    fontSize: 9,
+    lineHeight: 14,
+    marginTop: 3,
+  },
+  budgetAlertPill: {
+    minWidth: 25,
+    height: 25,
+    borderRadius: 999,
+    backgroundColor: Colors.warning,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 7,
+  },
+  budgetAlertText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+  },
   insightsShortcut: {
     backgroundColor: Colors.surface,
     borderWidth: 1,

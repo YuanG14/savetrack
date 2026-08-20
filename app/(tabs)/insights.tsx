@@ -13,10 +13,15 @@ import { CategoryBreakdown } from '../../components/insights/CategoryBreakdown';
 import { InsightCard } from '../../components/insights/InsightCard';
 import { MonthlyCashFlowChart } from '../../components/insights/MonthlyCashFlowChart';
 import { Colors } from '../../constants/theme';
+import { useBudgets } from '../../contexts/BudgetContext';
 import { useGoals } from '../../contexts/GoalContext';
 import { useSafeSpend } from '../../contexts/SafeSpendContext';
 import { useSavings } from '../../contexts/SavingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
+import {
+  calculateBudgetProgress,
+  getTotalBudgetSummary,
+} from '../../utils/budget';
 import {
   type AnalyticsRange,
   buildCategoryAnalytics,
@@ -46,6 +51,7 @@ export default function InsightsScreen() {
   } = useSavings();
   const { goals, totalAllocatedCents } = useGoals();
   const { commitments, nextIncomeDate } = useSafeSpend();
+  const { budgets } = useBudgets();
 
   const [range, setRange] = useState<AnalyticsRange>('6m');
 
@@ -124,6 +130,20 @@ export default function InsightsScreen() {
     nextIncomeDate,
     range,
   ]);
+
+  const budgetProgress = useMemo(
+    () => calculateBudgetProgress(budgets, transactions),
+    [budgets, transactions]
+  );
+
+  const budgetSummary = useMemo(
+    () => getTotalBudgetSummary(budgetProgress),
+    [budgetProgress]
+  );
+
+  const overBudgetCount = budgetProgress.filter(
+    (item) => item.status === 'over'
+  ).length;
 
   const completedGoals = goals.filter(
     (goal) => goal.allocatedCents >= goal.targetAmountCents
@@ -291,6 +311,72 @@ export default function InsightsScreen() {
               ) : null}
             </View>
           ))}
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Budget health</Text>
+            <Text style={styles.sectionMeta}>
+              This month&apos;s category limits
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.budgetHealthCard}>
+          <View style={styles.budgetHealthRow}>
+            <View>
+              <Text style={styles.budgetHealthLabel}>Total budget</Text>
+              <Text style={styles.budgetHealthValue}>
+                {formatCurrencyFromCents(budgetSummary.totalLimitCents)}
+              </Text>
+            </View>
+
+            <View style={styles.budgetHealthRight}>
+              <Text style={styles.budgetHealthLabel}>Spent</Text>
+              <Text style={styles.budgetHealthValue}>
+                {formatCurrencyFromCents(budgetSummary.totalSpentCents)}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.budgetTrack}>
+            <View
+              style={[
+                styles.budgetFill,
+                {
+                  width: `${Math.min(
+                    100,
+                    Math.max(0, budgetSummary.percentUsed)
+                  )}%`,
+                  backgroundColor:
+                    budgetSummary.percentUsed >= 100
+                      ? Colors.danger
+                      : budgetSummary.percentUsed >= 80
+                        ? Colors.warning
+                        : Colors.primary,
+                },
+              ]}
+            />
+          </View>
+
+          <View style={styles.budgetHealthFooter}>
+            <Text style={styles.budgetHealthMeta}>
+              {budgetSummary.percentUsed}% used
+            </Text>
+
+            <Text
+              style={[
+                styles.budgetHealthMeta,
+                overBudgetCount > 0 && styles.dangerText,
+              ]}
+            >
+              {overBudgetCount > 0
+                ? `${overBudgetCount} over budget`
+                : `${formatCurrencyFromCents(
+                    budgetSummary.remainingCents
+                  )} remaining`}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.sectionHeader}>
@@ -571,6 +657,52 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F1F5F9',
     marginLeft: 50,
+  },
+  budgetHealthCard: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 27,
+  },
+  budgetHealthRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  budgetHealthRight: {
+    alignItems: 'flex-end',
+  },
+  budgetHealthLabel: {
+    color: Colors.textMuted,
+    fontSize: 9,
+  },
+  budgetHealthValue: {
+    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 3,
+  },
+  budgetTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#E2E8F0',
+    overflow: 'hidden',
+    marginTop: 14,
+  },
+  budgetFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  budgetHealthFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  budgetHealthMeta: {
+    color: Colors.textMuted,
+    fontSize: 9,
+    fontWeight: '700',
   },
   goalsCard: {
     flexDirection: 'row',

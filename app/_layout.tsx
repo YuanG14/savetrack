@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SQLiteProvider } from 'expo-sqlite';
 
+import { BudgetProvider } from '../contexts/BudgetContext';
 import { GoalProvider } from '../contexts/GoalContext';
 import { SafeSpendProvider } from '../contexts/SafeSpendContext';
 import { SavingsProvider } from '../contexts/SavingsContext';
@@ -15,20 +16,24 @@ export default function RootLayout() {
         <SavingsProvider>
           <GoalProvider>
             <SafeSpendProvider>
-              <StatusBar style="dark" />
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="add-transaction" />
-                <Stack.Screen name="transaction/[id]" />
-                <Stack.Screen name="savings" />
-                <Stack.Screen name="savings-entry" />
-                <Stack.Screen name="goal-editor" />
-                <Stack.Screen name="goal/[id]" />
-                <Stack.Screen name="safe-to-spend" />
-                <Stack.Screen name="commitment-editor" />
-                <Stack.Screen name="can-i-afford-it" />
-                <Stack.Screen name="what-if" />
-              </Stack>
+              <BudgetProvider>
+                <StatusBar style="dark" />
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="add-transaction" />
+                  <Stack.Screen name="transaction/[id]" />
+                  <Stack.Screen name="savings" />
+                  <Stack.Screen name="savings-entry" />
+                  <Stack.Screen name="goal-editor" />
+                  <Stack.Screen name="goal/[id]" />
+                  <Stack.Screen name="safe-to-spend" />
+                  <Stack.Screen name="commitment-editor" />
+                  <Stack.Screen name="can-i-afford-it" />
+                  <Stack.Screen name="what-if" />
+                  <Stack.Screen name="budgets" />
+                  <Stack.Screen name="budget-editor" />
+                </Stack>
+              </BudgetProvider>
             </SafeSpendProvider>
           </GoalProvider>
         </SavingsProvider>
