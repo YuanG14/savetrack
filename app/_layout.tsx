@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SQLiteProvider } from 'expo-sqlite';
 
 import { GoalProvider } from '../contexts/GoalContext';
+import { SafeSpendProvider } from '../contexts/SafeSpendContext';
 import { SavingsProvider } from '../contexts/SavingsContext';
 import { TransactionProvider } from '../contexts/TransactionContext';
 import { migrateDbIfNeeded } from '../database/migrations';
@@ -13,16 +14,20 @@ export default function RootLayout() {
       <TransactionProvider>
         <SavingsProvider>
           <GoalProvider>
-            <StatusBar style="dark" />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="add-transaction" />
-              <Stack.Screen name="transaction/[id]" />
-              <Stack.Screen name="savings" />
-              <Stack.Screen name="savings-entry" />
-              <Stack.Screen name="goal-editor" />
-              <Stack.Screen name="goal/[id]" />
-            </Stack>
+            <SafeSpendProvider>
+              <StatusBar style="dark" />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="add-transaction" />
+                <Stack.Screen name="transaction/[id]" />
+                <Stack.Screen name="savings" />
+                <Stack.Screen name="savings-entry" />
+                <Stack.Screen name="goal-editor" />
+                <Stack.Screen name="goal/[id]" />
+                <Stack.Screen name="safe-to-spend" />
+                <Stack.Screen name="commitment-editor" />
+              </Stack>
+            </SafeSpendProvider>
           </GoalProvider>
         </SavingsProvider>
       </TransactionProvider>

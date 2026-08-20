@@ -15,10 +15,17 @@ import { GoalCard } from '../../components/goals/GoalCard';
 import { TransactionRow } from '../../components/transactions/TransactionRow';
 import { Colors } from '../../constants/theme';
 import { useGoals } from '../../contexts/GoalContext';
+import { useSafeSpend } from '../../contexts/SafeSpendContext';
 import { useSavings } from '../../contexts/SavingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { formatCurrencyFromCents } from '../../utils/currency';
 import { getCurrentMonthKey } from '../../utils/date';
+import {
+  calculateDailySafeToSpend,
+  calculateSafeToSpend,
+  getCommitmentsBeforeDate,
+  getDaysUntilDate,
+} from '../../utils/safe-spend';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -29,6 +36,11 @@ export default function HomeScreen() {
     totalAllocatedCents,
     loading: goalsLoading,
   } = useGoals();
+  const {
+    commitments,
+    nextIncomeDate,
+    loading: safeSpendLoading,
+  } = useSafeSpend();
 
   const summary = useMemo(() => {
     const monthKey = getCurrentMonthKey();
@@ -53,19 +65,44 @@ export default function HomeScreen() {
       .reduce((sum, item) => sum + item.amountCents, 0);
 
     const balanceCents = allIncomeCents - allExpenseCents;
-    const safeToSpendCents = balanceCents - currentSavingsCents;
+
+    const relevantCommitments = getCommitmentsBeforeDate(
+      commitments,
+      nextIncomeDate
+    );
+
+    const commitmentCents = relevantCommitments.reduce(
+      (sum, item) => sum + item.amountCents,
+      0
+    );
+
+    const safeToSpendCents = calculateSafeToSpend(
+      balanceCents,
+      currentSavingsCents,
+      commitmentCents
+    );
+
+    const daysUntilIncome = getDaysUntilDate(nextIncomeDate);
+    const dailyCents = calculateDailySafeToSpend(
+      Math.max(0, safeToSpendCents),
+      daysUntilIncome
+    );
 
     return {
       incomeCents,
       expenseCents,
       balanceCents,
+      commitmentCents,
       safeToSpendCents,
+      dailyCents,
+      daysUntilIncome,
     };
-  }, [transactions, currentSavingsCents]);
+  }, [transactions, currentSavingsCents, commitments, nextIncomeDate]);
 
   const recentTransactions = transactions.slice(0, 4);
   const featuredGoal = goals[0];
-  const loading = transactionsLoading || savingsLoading || goalsLoading;
+  const loading =
+    transactionsLoading || savingsLoading || goalsLoading || safeSpendLoading;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -130,6 +167,63 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        <Pressable
+          style={[
+            styles.safeCard,
+            summary.safeToSpendCents < 0 && styles.safeCardDanger,
+          ]}
+          onPress={() => router.push('/safe-to-spend')}
+        >
+          <View style={styles.safeTopRow}>
+            <View>
+              <Text style={styles.safeLabel}>Safe to spend</Text>
+              <Text
+                style={[
+                  styles.safeValue,
+                  summary.safeToSpendCents < 0 && styles.safeValueDanger,
+                ]}
+              >
+                {formatCurrencyFromCents(summary.safeToSpendCents)}
+              </Text>
+            </View>
+
+            <View style={styles.safeIcon}>
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={22}
+                color={
+                  summary.safeToSpendCents < 0 ? Colors.danger : Colors.primary
+                }
+              />
+            </View>
+          </View>
+
+          <View style={styles.safeDivider} />
+
+          <View style={styles.safeBottomRow}>
+            <View>
+              <Text style={styles.safeMetaLabel}>Daily allowance</Text>
+              <Text style={styles.safeMetaValue}>
+                {summary.dailyCents === null
+                  ? 'Set income date'
+                  : `${formatCurrencyFromCents(summary.dailyCents)}/day`}
+              </Text>
+            </View>
+
+            <View style={styles.safeMetaRight}>
+              <Text style={styles.safeMetaLabel}>Upcoming reserved</Text>
+              <Text style={styles.safeMetaValue}>
+                {formatCurrencyFromCents(summary.commitmentCents)}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.safeLinkRow}>
+            <Text style={styles.safeLink}>See safe-to-spend breakdown</Text>
+            <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
+          </View>
+        </Pressable>
+
         <View style={styles.moneyStatusGrid}>
           <Pressable
             style={styles.savingsCard}
@@ -144,18 +238,22 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
 
-          <View style={styles.safeToSpendCard}>
-            <Text style={styles.miniCardLabel}>Safe to spend</Text>
-            <Text
-              style={[
-                styles.miniCardValue,
-                summary.safeToSpendCents < 0 && styles.negativeValue,
-              ]}
-            >
-              {formatCurrencyFromCents(summary.safeToSpendCents)}
+          <Pressable
+            style={styles.commitmentCard}
+            onPress={() => router.push('/safe-to-spend')}
+          >
+            <Text style={styles.miniCardLabel}>Commitments</Text>
+            <Text style={styles.miniCardValue}>
+              {formatCurrencyFromCents(summary.commitmentCents)}
             </Text>
-            <Text style={styles.miniCardMeta}>After reserved savings</Text>
-          </View>
+            <Text style={styles.miniCardMeta}>
+              {summary.daysUntilIncome === null
+                ? 'Before next income'
+                : summary.daysUntilIncome === 0
+                  ? 'Due by today'
+                  : `Due in next ${summary.daysUntilIncome} days`}
+            </Text>
+          </Pressable>
         </View>
 
         {featuredGoal ? (
@@ -271,28 +369,72 @@ const styles = StyleSheet.create({
   },
   summaryLabel: { color: Colors.textSecondary, fontSize: 12, marginBottom: 5 },
   summaryValue: { color: Colors.text, fontSize: 18, fontWeight: '800' },
+  safeCard: {
+    backgroundColor: Colors.primarySoft,
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 14,
+  },
+  safeCardDanger: { backgroundColor: Colors.dangerSoft },
+  safeTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  safeLabel: { color: Colors.textSecondary, fontSize: 11, fontWeight: '700' },
+  safeValue: {
+    color: Colors.primaryDark,
+    fontSize: 27,
+    fontWeight: '800',
+    marginTop: 4,
+  },
+  safeValueDanger: { color: Colors.danger },
+  safeIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  safeDivider: { height: 1, backgroundColor: '#DBEAFE', marginVertical: 14 },
+  safeBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  safeMetaRight: { alignItems: 'flex-end' },
+  safeMetaLabel: { color: Colors.textMuted, fontSize: 9 },
+  safeMetaValue: { color: Colors.text, fontSize: 12, fontWeight: '800', marginTop: 3 },
+  safeLinkRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 14,
+  },
+  safeLink: { color: Colors.primary, fontSize: 10, fontWeight: '800' },
   moneyStatusGrid: { flexDirection: 'row', gap: 12, marginBottom: 26 },
   savingsCard: {
     flex: 1,
-    backgroundColor: Colors.primarySoft,
-    borderRadius: 20,
-    padding: 17,
+    backgroundColor: Colors.surface,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 16,
   },
-  safeToSpendCard: {
+  commitmentCard: {
     flex: 1,
-    backgroundColor: Colors.successSoft,
-    borderRadius: 20,
-    padding: 17,
+    backgroundColor: Colors.warningSoft,
+    borderRadius: 19,
+    padding: 16,
   },
-  miniCardLabel: { color: Colors.textSecondary, fontSize: 11, fontWeight: '700' },
+  miniCardLabel: { color: Colors.textSecondary, fontSize: 10, fontWeight: '700' },
   miniCardValue: {
     color: Colors.text,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
-    marginTop: 6,
+    marginTop: 5,
   },
   miniCardMeta: { color: Colors.textMuted, fontSize: 9, marginTop: 5 },
-  negativeValue: { color: Colors.danger },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
