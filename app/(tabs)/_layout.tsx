@@ -8,6 +8,7 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: '#2563EB',
         tabBarInactiveTintColor: '#94A3B8',
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E2E8F0',
@@ -30,7 +31,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-
       <Tabs.Screen
         name="transactions"
         options={{
@@ -40,7 +40,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-
       <Tabs.Screen
         name="goals"
         options={{
@@ -50,7 +49,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-
       <Tabs.Screen
         name="planner"
         options={{
@@ -60,7 +58,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-
       <Tabs.Screen
         name="insights"
         options={{
