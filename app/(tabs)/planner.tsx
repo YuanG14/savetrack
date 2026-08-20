@@ -316,6 +316,24 @@ export default function PlannerScreen() {
             </Pressable>
           ) : null}
 
+          <Pressable
+            style={styles.affordabilityButton}
+            onPress={() => router.push('/can-i-afford-it')}
+          >
+            <View style={styles.affordabilityIcon}>
+              <Ionicons name="bag-handle-outline" size={21} color={Colors.primary} />
+            </View>
+
+            <View style={styles.affordabilityText}>
+              <Text style={styles.affordabilityTitle}>Can I afford something right now?</Text>
+              <Text style={styles.affordabilityMeta}>
+                Check a purchase against your actual safe-to-spend money.
+              </Text>
+            </View>
+
+            <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+          </Pressable>
+
           <View style={styles.noteCard}>
             <Ionicons name="information-circle-outline" size={19} color={Colors.primary} />
             <Text style={styles.noteText}>
@@ -547,6 +565,38 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   buttonDisabled: { opacity: 0.7 },
+  affordabilityButton: {
+    backgroundColor: Colors.primarySoft,
+    borderRadius: 18,
+    padding: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  affordabilityIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  affordabilityText: {
+    flex: 1,
+    marginLeft: 11,
+    marginRight: 8,
+  },
+  affordabilityTitle: {
+    color: Colors.text,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  affordabilityMeta: {
+    color: Colors.textSecondary,
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 3,
+  },
   noteCard: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
